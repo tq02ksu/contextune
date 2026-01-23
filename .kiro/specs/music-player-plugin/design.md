@@ -159,14 +159,23 @@ An intelligent music player plugin for IDEs (primarily IntelliJ IDEA, with optio
 
 **Trade-offs**: Simplified architecture and pure Rust stack outweigh the loss of APE support.
 
-### Decision 4: Local-First AI Processing
+### Decision 4: Local-First AI Processing with Privacy Guarantees
 **Rationale**: All emotion analysis and behavioral monitoring occurs locally without transmitting data externally. This design:
-- Protects user privacy
+- Protects user privacy by keeping all behavioral data on the user's machine
 - Reduces latency for real-time recommendations
 - Eliminates dependency on external AI services
-- Builds user trust
+- Builds user trust through transparent data handling
+- Complies with privacy regulations (GDPR, CCPA)
+- Allows users to disable emotion analysis entirely
 
-**Trade-offs**: Local processing may be less sophisticated than cloud-based AI, but privacy concerns outweigh this limitation.
+**Implementation**: 
+- All emotion analysis runs in local Rust processes
+- Behavioral data never leaves the user's machine
+- No telemetry or analytics sent to external servers
+- User preferences stored locally with encryption
+- Clear privacy controls in settings
+
+**Trade-offs**: Local processing may be less sophisticated than cloud-based AI, but privacy concerns and user trust outweigh this limitation.
 
 ### Decision 5: Hybrid Music Source Architecture
 **Rationale**: Supporting both local files and QQ Music streaming provides flexibility:
@@ -326,7 +335,11 @@ interface Playlist {
     moods?: string[];
     energyRange?: [number, number];
     tempoRange?: [number, number];
+    hasVocals?: boolean;
+    instrumentation?: string[];
     maxTracks?: number;
+    sortBy?: 'energy' | 'tempo' | 'recent' | 'random';
+    autoUpdate?: boolean; // Automatically refresh based on new classifications
   };
 }
 ```
@@ -377,15 +390,27 @@ interface MusicRecommendation {
   
   // Contextual information
   contextualInfo: {
+    musicType: 'classical' | 'modern' | 'other';
     background: string; // Historical/cultural context
     relevance: string; // Why it matches current context
     visualContent: string; // URL to generated image
-    additionalDetails?: {
-      composer?: string;
-      musicalSignificance?: string;
-      artistBackground?: string;
-      songMeaning?: string;
+    
+    // Classical music specific details
+    classicalDetails?: {
+      composer: string;
+      compositionYear?: number;
+      musicalPeriod?: string; // Baroque, Classical, Romantic, etc.
+      musicalSignificance: string;
+      movementInfo?: string;
+    };
+    
+    // Modern music specific details
+    modernDetails?: {
+      artistBackground: string;
+      songMeaning: string;
+      culturalContext?: string;
       productionDetails?: string;
+      releaseYear?: number;
     };
   };
 }
@@ -708,6 +733,56 @@ interface PlaybackAction {
 }
 ```
 
+### Context Generator API
+
+```typescript
+interface ContextGenerator {
+  // Generate contextual information for recommendations
+  generateContext(track: Track, userContext: UserContext): Promise<ContextualInfo>;
+  
+  // Generate visual content
+  generateVisualContent(track: Track, mood: string): Promise<string>; // Returns image URL
+  
+  // Get detailed information
+  getDetailedInfo(trackId: string): Promise<DetailedTrackInfo>;
+}
+
+interface ContextualInfo {
+  musicType: 'classical' | 'modern' | 'other';
+  background: string;
+  relevance: string;
+  visualContent: string;
+  classicalDetails?: ClassicalMusicDetails;
+  modernDetails?: ModernMusicDetails;
+}
+
+interface ClassicalMusicDetails {
+  composer: string;
+  compositionYear?: number;
+  musicalPeriod?: string;
+  musicalSignificance: string;
+  movementInfo?: string;
+  historicalContext?: string;
+}
+
+interface ModernMusicDetails {
+  artistBackground: string;
+  songMeaning: string;
+  culturalContext?: string;
+  productionDetails?: string;
+  releaseYear?: number;
+  influences?: string[];
+}
+
+interface DetailedTrackInfo {
+  extendedBackground: string;
+  relatedTracks: Track[];
+  similarArtists?: string[];
+  musicalAnalysis?: string;
+  listeningNotes?: string;
+}
+```
+
 ### Recommendation Engine API
 
 ```typescript
@@ -715,6 +790,9 @@ interface RecommendationEngine {
   // Recommendation generation
   getRecommendations(context: UserContext, count: number): Promise<MusicRecommendation[]>;
   getContextualRecommendation(track: Track, context: UserContext): Promise<MusicRecommendation>;
+  
+  // Smart playlist generation based on AI classification
+  generateSmartPlaylist(criteria: PlaylistCriteria, name: string): Promise<Playlist>;
   
   // Preference learning
   recordListeningHistory(trackId: string, duration: number, skipped: boolean): void;
@@ -904,8 +982,10 @@ When a recommendation is made, rich contextual information is displayed:
 1. Build recommendation algorithm based on context
 2. Integrate emotion analysis with recommendations
 3. Implement learning from user feedback
-4. Add smart playlist generation
-5. Create recommendation UI
+4. Add smart playlist generation based on AI classification
+5. Implement auto-updating smart playlists
+6. Create recommendation UI
+7. Add preference persistence and learning
 
 ### Phase 10: Chat Interface
 1. Integrate natural language processing library
@@ -915,11 +995,14 @@ When a recommendation is made, rich contextual information is displayed:
 5. Create chat UI component
 
 ### Phase 11: Context Generation
-1. Implement background information retrieval
-2. Integrate AI image generation for visual content
-3. Build relevance explanation generator
-4. Create contextual information UI
-5. Add deep-dive details and related recommendations
+1. Implement background information retrieval system
+2. Build classical music context generator (composer, period, significance)
+3. Build modern music context generator (artist, meaning, cultural context)
+4. Integrate AI image generation for visual content
+5. Build relevance explanation generator based on user context
+6. Create contextual information UI with music-type-specific layouts
+7. Add deep-dive details and related recommendations
+8. Implement visual content caching and optimization
 
 ## Testing Strategy
 
@@ -986,22 +1069,35 @@ When a recommendation is made, rich contextual information is displayed:
 
 ## Security and Privacy Considerations
 
-### Data Privacy
-- All behavioral analysis occurs locally
-- No user data transmitted to external servers (except QQ Music API)
-- User can disable emotion analysis
-- Clear privacy policy and data usage disclosure
+### Data Privacy (Critical Requirement)
+- **All behavioral analysis occurs locally** - no user behavior data transmitted externally
+- **No telemetry or analytics** - the plugin does not send usage data to external servers
+- **Local emotion analysis** - all mood and context inference happens on the user's machine
+- **User control** - users can disable emotion analysis and behavioral monitoring entirely
+- **Transparent data handling** - clear documentation of what data is collected and how it's used
+- **No external AI services for behavior** - emotion detection uses local models only
+- **Privacy-first architecture** - designed with privacy as a core principle, not an afterthought
+- **Compliance** - adheres to GDPR, CCPA, and other privacy regulations
 
 ### Secure Storage
-- Encrypt stored credentials for QQ Music
-- Secure playlist and preference data
-- Protect user listening history
+- Encrypt stored credentials for QQ Music using OS keychain
+- Secure playlist and preference data with file-level encryption
+- Protect user listening history with local encryption
+- No cloud sync of personal data without explicit user consent
 
 ### API Security
-- Use HTTPS for all external API calls
+- Use HTTPS for all external API calls (QQ Music, metadata services)
 - Implement proper authentication for QQ Music
 - Handle API rate limiting gracefully
-- Validate all external data inputs
+- Validate all external data inputs to prevent injection attacks
+- Sandbox external API responses
+
+### User Controls
+- Settings panel for privacy preferences
+- Option to disable all behavioral monitoring
+- Option to disable emotion analysis
+- Option to clear listening history
+- Export/delete personal data on request
 
 ## Performance Requirements
 
