@@ -84,36 +84,50 @@ jobs:
             target/
           key: ubuntu-cargo-${{ hashFiles('**/Cargo.lock') }}
       
-      - name: Install Audio Tools
+      - name: Install Audio Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y sox libsox-fmt-all pulseaudio
-          # Start PulseAudio with null sink for testing
-          pulseaudio --start
-          pactl load-module module-null-sink sink_name=test_sink
+          sudo apt-get install -y libasound2-dev pulseaudio pulseaudio-utils
       
-      - name: Generate Test Signals
+      - name: Setup Audio Environment
         run: |
-          mkdir -p test_data
-          # Generate reference audio files for testing
-          sox -n -r 44100 -c 2 test_data/test_sine_440hz.wav synth 5 sine 440
-          sox -n -r 48000 -c 2 test_data/test_sine_1khz.wav synth 5 sine 1000
-          sox -n -r 96000 -c 2 test_data/test_whitenoise.wav synth 5 whitenoise
+          chmod +x scripts/setup_audio.sh
+          ./scripts/setup_audio.sh --ci
+      
+      - name: Generate Reference Audio Files
+        run: |
+          cd core
+          cargo run --example generate_test_audio
       
       - name: Run Audio Quality Tests
-        run: cargo test --test audio_quality -- --nocapture
+        run: |
+          cd core
+          cargo test --test audio_quality -- --nocapture
         continue-on-error: true
       
-      - name: Verify Bit-Perfect Playback
-        run: cargo test --test bit_perfect_verification
-        continue-on-error: true
+      - name: Run Bit-Perfect Verification Tests
+        run: |
+          cd core
+          cargo test --test bit_perfect_verification -- --nocapture
+      
+      - name: Run Frequency Response Tests
+        run: |
+          cd core
+          cargo test --test frequency_response -- --nocapture
+      
+      - name: Run THD+N Measurement Tests
+        run: |
+          cd core
+          cargo test --test thd_n_measurement -- --nocapture
       
       - name: Upload Test Results
         if: always()
         uses: actions/upload-artifact@v3
         with:
           name: audio-quality-results
-          path: target/audio_quality_results/
+          path: |
+            core/target/audio_quality_results/
+            core/test_data/reference/
           if-no-files-found: ignore
 
 

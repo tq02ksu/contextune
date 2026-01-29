@@ -11,11 +11,11 @@
 
 ### 0.2 Audio Quality Testing Infrastructure
 - [x] 0.2.1 Create audio quality test framework (`tests/audio_quality.rs`)
-- [ ] 0.2.2 Generate reference audio test files (sine waves, white noise, impulses)
-- [ ] 0.2.3 Implement bit-perfect verification tests
-- [ ] 0.2.4 Implement frequency response analysis tests
-- [ ] 0.2.5 Implement THD+N measurement tests
-- [ ] 0.2.6 Set up PulseAudio null sink for CI testing
+- [x] 0.2.2 Generate reference audio test files (sine waves, white noise, impulses)
+- [x] 0.2.3 Implement bit-perfect verification tests
+- [x] 0.2.4 Implement frequency response analysis tests
+- [x] 0.2.5 Implement THD+N measurement tests
+- [x] 0.2.6 Set up PulseAudio null sink for CI testing
 - [ ] 0.2.7 Create audio checksum calculation utilities
 
 ### 0.3 Performance Benchmarking Setup
@@ -56,7 +56,7 @@
 
 ### 0.8 Local Development Tools
 - [x] 0.8.1 Create local CI script (`scripts/ci-local.sh`)
-- [ ] 0.8.2 Create pre-commit hooks
+- [x] 0.8.2 Create pre-commit hooks (Placeholder tests fixed for clippy compliance)
 - [ ] 0.8.3 Document local testing procedures
 - [ ] 0.8.4 Create development environment setup guide
 

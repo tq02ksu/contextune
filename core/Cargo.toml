@@ -46,6 +46,9 @@ tracing-subscriber.workspace = true
 proptest.workspace = true
 criterion.workspace = true
 tempfile.workspace = true
+hound = "3.5"
+rand = "0.8"
+rustfft = "6.2"
 
 [[bench]]
 name = "audio_pipeline"
@@ -58,6 +61,14 @@ path = "tests/audio_quality.rs"
 [[test]]
 name = "bit_perfect_verification"
 path = "tests/bit_perfect_verification.rs"
+
+[[test]]
+name = "frequency_response"
+path = "tests/frequency_response.rs"
+
+[[test]]
+name = "thd_n_measurement"
+path = "tests/thd_n_measurement.rs"
 
 [[test]]
 name = "ffi_integration"

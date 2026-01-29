@@ -268,8 +268,11 @@ $RECYCLE.BIN/
 *.aac
 *.ogg
 *.m4a
-!test_data/reference/*.wav
-!test_data/reference/*.flac
+
+# But keep reference audio files and documentation
+!test_data/reference/**/*.wav
+!test_data/reference/**/*.flac
+!test_data/reference/**/*.md
 
 # Native libraries (will be built)
 /plugin/libs/
