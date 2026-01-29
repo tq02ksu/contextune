@@ -5,8 +5,8 @@
 #[cfg(test)]
 mod tests {
     #[test]
-    fn test_placeholder() {
+    #[ignore] // Will be implemented in Phase 0.2
+    fn test_audio_quality_placeholder() {
         // Audio quality tests will be implemented in Phase 0.2
-        assert!(true);
     }
 }

@@ -13,11 +13,8 @@ pub use engine::AudioEngine;
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     #[test]
     fn test_audio_module() {
-        // Module structure test
-        assert!(true);
+        // Module structure test - placeholder for Phase 1
     }
 }
