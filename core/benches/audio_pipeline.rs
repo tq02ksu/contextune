@@ -444,7 +444,8 @@ fn benchmark_cpu_usage(c: &mut Criterion) {
                     }
 
                     // Pass 2: DC offset removal
-                    let avg: i32 = output.iter().map(|&s| s as i32).sum::<i32>() / output.len() as i32;
+                    let avg: i32 =
+                        output.iter().map(|&s| s as i32).sum::<i32>() / output.len() as i32;
                     for sample in &mut output {
                         *sample = (*sample as i32 - avg) as i16;
                     }
@@ -488,7 +489,7 @@ fn benchmark_cpu_usage(c: &mut Criterion) {
             BenchmarkId::new("convolution", size),
             &samples,
             |b, samples| {
-                let kernel = vec![0.2f32, 0.2, 0.2, 0.2, 0.2]; // Simple averaging kernel
+                let kernel = [0.2f32, 0.2, 0.2, 0.2, 0.2]; // Simple averaging kernel
                 let kernel_size = kernel.len();
 
                 b.iter(|| {
