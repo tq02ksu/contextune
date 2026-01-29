@@ -13,6 +13,7 @@ pub mod processor;
 pub use engine::{AudioEngine, AudioEngineInterface, PlaybackState, AudioEvent, AudioCallback, AudioDeviceInfo};
 pub use format::{AudioFormat, SampleFormat, ChannelLayout, Channel, FormatError};
 pub use buffer::AudioBuffer;
+pub use decoder::{AudioDecoder, DecodedPacket, AudioFormatInfo};
 
 #[cfg(test)]
 mod tests {

@@ -78,12 +78,12 @@
 - [x] 1.2.6 Write unit tests for audio engine initialization
 
 ### 1.3 Symphonia Integration for Decoding
-- [ ] 1.3.1 Integrate symphonia decoder for MP3
-- [ ] 1.3.2 Integrate symphonia decoder for WAV
-- [ ] 1.3.3 Implement format detection
-- [ ] 1.3.4 Add codec registry and format probing
-- [ ] 1.3.5 Implement audio stream reading
-- [ ] 1.3.6 Write tests for each supported format
+- [x] 1.3.1 Integrate symphonia decoder for MP3
+- [x] 1.3.2 Integrate symphonia decoder for WAV
+- [x] 1.3.3 Implement format detection
+- [x] 1.3.4 Add codec registry and format probing
+- [x] 1.3.5 Implement audio stream reading
+- [x] 1.3.6 Write tests for each supported format
 
 ### 1.4 Zero-Copy Ring Buffer
 - [ ] 1.4.1 Design lock-free ring buffer structure

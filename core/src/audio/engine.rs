@@ -410,7 +410,7 @@ impl AudioEngine {
     
     /// Audio callback function for CPAL stream
     fn audio_callback(output: &mut [f32], state: &Arc<RwLock<AudioEngineState>>) {
-        let state_guard = match state.try_read() {
+        let mut state_guard = match state.try_write() {
             Some(guard) => guard,
             None => {
                 // If we can't acquire the lock, fill with silence to avoid audio glitches
@@ -422,9 +422,41 @@ impl AudioEngine {
         // Fill output buffer based on current state
         match state_guard.state {
             PlaybackState::Playing => {
-                // TODO: Fill with actual audio data from buffer
-                // For now, fill with silence to avoid noise
-                output.fill(0.0);
+                if let Some(ref buffer) = state_guard.buffer {
+                    let samples_per_frame = state_guard.format.as_ref()
+                        .map(|f| f.channels as usize)
+                        .unwrap_or(2);
+                    
+                    let frames_needed = output.len() / samples_per_frame;
+                    let start_sample = state_guard.position as usize * samples_per_frame;
+                    let buffer_data = buffer.data();
+                    
+                    // Copy audio data to output buffer
+                    for (i, output_sample) in output.iter_mut().enumerate() {
+                        let buffer_index = start_sample + i;
+                        if buffer_index < buffer_data.len() {
+                            *output_sample = buffer_data[buffer_index] as f32;
+                        } else {
+                            *output_sample = 0.0; // End of audio data
+                        }
+                    }
+                    
+                    // Update position
+                    state_guard.position += frames_needed as u64;
+                    
+                    // Check if we've reached the end
+                    if let Some(duration) = state_guard.duration {
+                        if state_guard.position >= duration {
+                            state_guard.state = PlaybackState::Stopped;
+                            state_guard.position = 0;
+                            // Note: We can't easily emit events from this callback
+                            // The main thread should check for this condition
+                        }
+                    }
+                } else {
+                    // No buffer loaded, fill with silence
+                    output.fill(0.0);
+                }
             }
             _ => {
                 // Fill with silence for all other states
@@ -712,14 +744,42 @@ impl AudioEngineInterface for AudioEngine {
             )));
         }
         
-        // TODO: Implement file loading with symphonia
-        // For now, just update state and initialize stream
+        // Check if format is supported
+        if !crate::audio::decoder::is_format_supported(path) {
+            return Err(crate::Error::Decoding(format!(
+                "Unsupported file format: {}", 
+                path.extension().and_then(|s| s.to_str()).unwrap_or("unknown")
+            )));
+        }
+        
+        // Create decoder and get format information
+        let mut decoder = crate::audio::decoder::AudioDecoder::new(path).map_err(|e| {
+            self.update_state(|state| {
+                state.state = PlaybackState::Error;
+                Some(AudioEvent::Error(format!("Failed to load file: {}", e)))
+            });
+            e
+        })?;
+        
+        let audio_format = decoder.format().clone();
+        let duration = decoder.duration();
+        
+        // Decode all audio data for now (TODO: implement streaming in ring buffer phase)
+        let audio_buffer = decoder.decode_all().map_err(|e| {
+            self.update_state(|state| {
+                state.state = PlaybackState::Error;
+                Some(AudioEvent::Error(format!("Failed to decode audio: {}", e)))
+            });
+            e
+        })?;
+        
+        // Update state with loaded file information
         self.update_state(|state| {
             state.state = PlaybackState::Stopped;
             state.position = 0;
-            // TODO: Set actual duration and format from loaded file
-            state.duration = Some(44100 * 180); // 3 minutes at 44.1kHz
-            state.format = Some(AudioFormat::default());
+            state.duration = duration;
+            state.format = Some(audio_format.clone());
+            state.buffer = Some(audio_buffer);
             Some(AudioEvent::StateChanged(PlaybackState::Stopped))
         });
         
@@ -734,9 +794,8 @@ impl AudioEngineInterface for AudioEngine {
             })?;
         }
         
-        // Initialize output stream with default format
-        let format = AudioFormat::default();
-        self.init_output_stream(&format).map_err(|e| {
+        // Initialize output stream with the audio format
+        self.init_output_stream(&audio_format).map_err(|e| {
             self.update_state(|state| {
                 state.state = PlaybackState::Error;
                 Some(AudioEvent::Error(format!("Failed to initialize stream: {}", e)))
@@ -1402,5 +1461,32 @@ mod tests {
         for handle in handles {
             handle.join().unwrap();
         }
+    }
+
+    #[test]
+    fn test_file_loading_validation() {
+        let mut engine = AudioEngine::new().unwrap();
+        
+        // Test loading non-existent file
+        let result = engine.load_file("nonexistent.mp3");
+        assert!(result.is_err());
+        
+        // Test loading unsupported format
+        let mut temp_file = tempfile::NamedTempFile::new().unwrap();
+        std::io::Write::write_all(&mut temp_file, b"not audio data").unwrap();
+        
+        let result = engine.load_file(temp_file.path());
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_decoder_integration() {
+        // Test that decoder functions are accessible
+        assert!(crate::audio::decoder::is_format_supported("test.mp3"));
+        assert!(!crate::audio::decoder::is_format_supported("test.txt"));
+        
+        let extensions = crate::audio::decoder::supported_extensions();
+        assert!(extensions.contains(&"mp3"));
+        assert!(extensions.contains(&"wav"));
     }
 }
