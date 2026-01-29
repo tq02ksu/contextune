@@ -198,7 +198,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Count generated files
     let count = std::fs::read_dir(base_dir)?
         .filter_map(|e| e.ok())
-        .filter(|e| e.path().extension().map_or(false, |ext| ext == "wav"))
+        .filter(|e| e.path().extension().is_some_and(|ext| ext == "wav"))
         .count();
     println!("Total files: {}", count);
 

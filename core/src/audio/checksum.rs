@@ -95,6 +95,7 @@ pub fn calculate_simple_checksum_f64(samples: &[f64]) -> AudioChecksum {
 }
 
 /// Calculate CRC32 checksum of i16 samples
+#[allow(clippy::needless_borrows_for_generic_args)]
 pub fn calculate_crc32_checksum(samples: &[i16]) -> AudioChecksum {
     let mut crc = crc32fast::Hasher::new();
 
@@ -113,6 +114,7 @@ pub fn calculate_crc32_checksum(samples: &[i16]) -> AudioChecksum {
 }
 
 /// Calculate MD5 hash of i16 samples
+#[allow(clippy::needless_borrows_for_generic_args)]
 pub fn calculate_md5_checksum(samples: &[i16]) -> AudioChecksum {
     use md5::{Digest, Md5};
 
@@ -133,6 +135,7 @@ pub fn calculate_md5_checksum(samples: &[i16]) -> AudioChecksum {
 }
 
 /// Calculate SHA256 hash of i16 samples
+#[allow(clippy::needless_borrows_for_generic_args)]
 pub fn calculate_sha256_checksum(samples: &[i16]) -> AudioChecksum {
     use sha2::{Digest, Sha256};
 
