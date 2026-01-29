@@ -54,6 +54,80 @@ Runs the full CI pipeline locally before pushing to GitHub.
 4. Runs benchmarks (optional)
 5. Checks code coverage (optional)
 
+### `benchmark-regression.sh`
+
+Detects performance regressions by comparing benchmarks against a baseline.
+
+**Usage:**
+
+```bash
+# Save baseline
+./scripts/benchmark-regression.sh baseline
+
+# Compare against baseline
+./scripts/benchmark-regression.sh compare
+
+# Update baseline
+./scripts/benchmark-regression.sh update
+
+# Show help
+./scripts/benchmark-regression.sh help
+```
+
+**What it does:**
+
+- Runs Criterion benchmarks
+- Compares results against saved baseline
+- Detects regressions (>5% slower by default)
+- Uses Python analyzer for detailed reports (if available)
+- Exits with error if regressions detected
+
+**Configuration:**
+
+- Regression threshold: 5% (configurable in script)
+- Baseline directory: `target/criterion-baseline`
+- Current directory: `target/criterion`
+
+See [../docs/performance-testing.md](../docs/performance-testing.md) for detailed documentation.
+
+### `analyze-benchmarks.py`
+
+Detailed benchmark analysis and regression detection (Python).
+
+**Usage:**
+
+```bash
+# Analyze with defaults
+python3 scripts/analyze-benchmarks.py
+
+# Custom threshold
+python3 scripts/analyze-benchmarks.py --threshold 3.0
+
+# Custom directories
+python3 scripts/analyze-benchmarks.py \
+    --baseline target/criterion-baseline \
+    --current target/criterion \
+    --threshold 5.0
+
+# Show help
+python3 scripts/analyze-benchmarks.py --help
+```
+
+**What it does:**
+
+- Parses Criterion JSON output
+- Compares baseline vs current results
+- Categorizes changes (regression/improvement/stable/new/missing)
+- Generates detailed reports with statistics
+- Exits with error if regressions detected
+
+**Requirements:**
+
+- Python 3.6+
+- No external dependencies (uses stdlib only)
+
+See [../docs/performance-testing.md](../docs/performance-testing.md) for detailed documentation.
+
 ## CI Integration
 
 These scripts are used in GitHub Actions workflows:

@@ -23,7 +23,7 @@
 - [x] 0.3.2 Implement decoding latency benchmarks
 - [x] 0.3.3 Implement memory usage benchmarks
 - [x] 0.3.4 Implement CPU usage benchmarks
-- [ ] 0.3.5 Create performance regression detection script
+- [x] 0.3.5 Create performance regression detection script
 - [ ] 0.3.6 Set up benchmark result storage and visualization
 
 ### 0.4 Memory Safety Testing
