@@ -16,7 +16,7 @@
 - [x] 0.2.4 Implement frequency response analysis tests
 - [x] 0.2.5 Implement THD+N measurement tests
 - [x] 0.2.6 Set up PulseAudio null sink for CI testing
-- [ ] 0.2.7 Create audio checksum calculation utilities
+- [x] 0.2.7 Create audio checksum calculation utilities
 
 ### 0.3 Performance Benchmarking Setup
 - [x] 0.3.1 Create Criterion benchmark suite (`benches/audio_pipeline.rs`)
