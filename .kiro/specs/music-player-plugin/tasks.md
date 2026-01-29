@@ -21,7 +21,7 @@
 ### 0.3 Performance Benchmarking Setup
 - [x] 0.3.1 Create Criterion benchmark suite (`benches/audio_pipeline.rs`)
 - [x] 0.3.2 Implement decoding latency benchmarks
-- [ ] 0.3.3 Implement memory usage benchmarks
+- [x] 0.3.3 Implement memory usage benchmarks
 - [ ] 0.3.4 Implement CPU usage benchmarks
 - [ ] 0.3.5 Create performance regression detection script
 - [ ] 0.3.6 Set up benchmark result storage and visualization
