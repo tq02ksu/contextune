@@ -3,6 +3,7 @@
 //! Provides high-fidelity audio playback with bit-perfect accuracy.
 
 pub mod buffer;
+pub mod checksum;
 pub mod decoder;
 pub mod engine;
 pub mod format;

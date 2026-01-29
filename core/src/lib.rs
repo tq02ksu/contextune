@@ -1,7 +1,8 @@
 //! Contexture Core Library
 //!
 //! A high-fidelity music player core with AI-powered features.
-//! This library provides professional-grade audio playback with bit-perfect accuracy.
+//! This library provides professional-grade audio playback with bit-perfect
+//! accuracy.
 
 #![warn(missing_docs)]
 #![warn(clippy::all)]

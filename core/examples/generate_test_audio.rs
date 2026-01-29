@@ -113,8 +113,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Test frequencies
     let test_frequencies = [
         (100.0, "100Hz"),
-        (440.0, "440Hz"),   // A4
-        (1000.0, "1kHz"),   // Standard reference
+        (440.0, "440Hz"), // A4
+        (1000.0, "1kHz"), // Standard reference
         (5000.0, "5kHz"),
         (10000.0, "10kHz"),
     ];

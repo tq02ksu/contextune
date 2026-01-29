@@ -1,6 +1,7 @@
 //! Audio quality tests
 //!
-//! Tests for audio quality verification (bit-perfect, frequency response, THD+N)
+//! Tests for audio quality verification (bit-perfect, frequency response,
+//! THD+N)
 
 #[cfg(test)]
 mod tests {
