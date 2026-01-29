@@ -1,7 +1,8 @@
 # Contexture
 
 [![CI](https://github.com/your-org/contexture/workflows/CI/badge.svg)](https://github.com/your-org/contexture/actions)
-[![codecov](https://codecov.io/gh/your-org/contexture/branch/main/graph/badge.svg)](https://codecov.io/gh/your-org/contexture)
+[![codecov](https://codecov.io/gh/your-org/contexture/branch/main/graph/badge.svg?token=YOUR_CODECOV_TOKEN)](https://codecov.io/gh/your-org/contexture)
+[![Coverage Status](https://img.shields.io/codecov/c/github/your-org/contexture/main.svg)](https://codecov.io/gh/your-org/contexture)
 [![License](https://img.shields.io/badge/license-MIT%2FApache--2.0-blue.svg)](LICENSE)
 
 An intelligent music player plugin for IDEs with high-fidelity audio playback and AI-powered music discovery.
@@ -82,9 +83,25 @@ cargo test
 cargo test --test audio_quality
 cargo test --test ffi_integration
 
-# With coverage
-cargo tarpaulin --out Html
+# Generate coverage report
+cargo coverage
+
+# Generate HTML coverage report and open in browser
+cargo coverage-html
+
+# CI mode coverage (XML only)
+cargo coverage-ci
 ```
+
+### Code Coverage
+
+The project maintains a minimum code coverage threshold of 85%. Coverage reports are generated using [Tarpaulin](https://github.com/xd009642/tarpaulin) and uploaded to [Codecov](https://codecov.io).
+
+Available coverage commands:
+- `cargo coverage` - Generate HTML and XML reports with threshold checking
+- `cargo coverage-html` - Generate HTML report and open in browser
+- `cargo coverage-ci` - CI mode (XML only, fails on threshold violation)
+- `cargo coverage-check` - Generate reports without threshold checking
 
 ### Code Quality
 

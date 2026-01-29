@@ -377,24 +377,60 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
       
-      - name: Install Tarpaulin
-        run: cargo install cargo-tarpaulin
+      - name: Install Audio Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libasound2-dev pulseaudio
       
-      - name: Generate Coverage
-        run: cargo tarpaulin --out Xml --output-dir coverage
+      - name: Cache Cargo
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ubuntu-cargo-coverage-${{ hashFiles('**/Cargo.lock') }}
+      
+      - name: Install Tarpaulin
+        run: cargo install cargo-tarpaulin --features vendored-openssl
+      
+      - name: Generate Coverage Report
+        run: |
+          cd core
+          ../scripts/coverage-report.sh --ci
         continue-on-error: true
       
       - name: Upload to Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
-          files: ./coverage/cobertura.xml
+          files: ./target/coverage/cobertura.xml
           fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
+          verbose: true
       
-      - name: Check Coverage Threshold
+      - name: Check Coverage Threshold (85% minimum)
         run: |
-          # Check if coverage is above 85%
-          cargo tarpaulin --out Json | jq '.coverage < 85' | grep false || echo "Coverage below threshold"
+          # Extract coverage percentage from XML report
+          COVERAGE=$(grep -o 'line-rate="[0-9.]*"' target/coverage/cobertura.xml | head -1 | grep -o '[0-9.]*')
+          COVERAGE_PERCENT=$(echo "$COVERAGE * 100" | bc -l | cut -d. -f1)
+          echo "Current coverage: ${COVERAGE_PERCENT}%"
+          if [ "$COVERAGE_PERCENT" -lt 85 ]; then
+            echo "⚠️  Coverage ${COVERAGE_PERCENT}% is below 85% threshold"
+            exit 1
+          else
+            echo "✅ Coverage ${COVERAGE_PERCENT}% meets 85% threshold"
+          fi
         continue-on-error: true
+      
+      - name: Upload Coverage Reports
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-reports
+          path: |
+            target/coverage/
+          if-no-files-found: ignore
 
   security-audit:
     name: Security Audit

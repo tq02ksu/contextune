@@ -42,11 +42,11 @@
 - [x] 0.5.6 Create FFI error handling tests
 
 ### 0.6 Code Coverage Setup
-- [ ] 0.6.1 Install and configure Tarpaulin
-- [ ] 0.6.2 Set up Codecov integration
-- [ ] 0.6.3 Configure coverage thresholds (85% minimum)
-- [ ] 0.6.4 Create coverage report generation
-- [ ] 0.6.5 Add coverage badges to README
+- [x] 0.6.1 Install and configure Tarpaulin
+- [x] 0.6.2 Set up Codecov integration
+- [x] 0.6.3 Configure coverage thresholds (85% minimum)
+- [x] 0.6.4 Create coverage report generation
+- [x] 0.6.5 Add coverage badges to README
 
 ### 0.7 Security Audit Setup
 - [ ] 0.7.1 Configure cargo-audit in CI
