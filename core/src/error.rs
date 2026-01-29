@@ -12,6 +12,14 @@ pub enum Error {
     #[error("Audio engine error: {0}")]
     AudioEngine(String),
 
+    /// Audio device error
+    #[error("Audio device error: {0}")]
+    AudioDevice(String),
+
+    /// Audio format error
+    #[error("Audio format error: {0}")]
+    AudioFormat(String),
+
     /// File I/O error
     #[error("File I/O error: {0}")]
     Io(#[from] std::io::Error),

@@ -70,12 +70,12 @@
 - [x] 1.1.5 Add core dependencies (symphonia, cpal, etc.)
 
 ### 1.2 Basic Audio Engine with cpal
-- [ ] 1.2.1 Implement AudioEngine trait definition
-- [ ] 1.2.2 Create cpal output stream initialization
-- [ ] 1.2.3 Implement audio device enumeration
-- [ ] 1.2.4 Add audio format negotiation
-- [ ] 1.2.5 Implement basic error handling
-- [ ] 1.2.6 Write unit tests for audio engine initialization
+- [x] 1.2.1 Implement AudioEngine trait definition
+- [x] 1.2.2 Create cpal output stream initialization
+- [x] 1.2.3 Implement audio device enumeration
+- [x] 1.2.4 Add audio format negotiation
+- [x] 1.2.5 Implement basic error handling
+- [x] 1.2.6 Write unit tests for audio engine initialization
 
 ### 1.3 Symphonia Integration for Decoding
 - [ ] 1.3.1 Integrate symphonia decoder for MP3

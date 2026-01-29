@@ -71,15 +71,17 @@ fn configure_macos() {
     println!("cargo:rustc-link-lib=framework=CoreFoundation");
     println!("cargo:rustc-link-lib=framework=AudioToolbox");
     
-    // Export symbols for dylib
-    println!("cargo:rustc-link-arg=-Wl,-exported_symbol,_audio_engine_create");
-    println!("cargo:rustc-link-arg=-Wl,-exported_symbol,_audio_engine_destroy");
-    println!("cargo:rustc-link-arg=-Wl,-exported_symbol,_audio_engine_play");
-    println!("cargo:rustc-link-arg=-Wl,-exported_symbol,_audio_engine_pause");
-    println!("cargo:rustc-link-arg=-Wl,-exported_symbol,_audio_engine_stop");
-    println!("cargo:rustc-link-arg=-Wl,-exported_symbol,_audio_engine_seek");
-    println!("cargo:rustc-link-arg=-Wl,-exported_symbol,_audio_engine_set_volume");
-    println!("cargo:rustc-link-arg=-Wl,-exported_symbol,_audio_engine_load_file");
+    // Only export symbols in release mode when FFI is enabled
+    if env::var("PROFILE").unwrap_or_default() == "release" {
+        println!("cargo:rustc-link-arg=-Wl,-exported_symbol,_audio_engine_create");
+        println!("cargo:rustc-link-arg=-Wl,-exported_symbol,_audio_engine_destroy");
+        println!("cargo:rustc-link-arg=-Wl,-exported_symbol,_audio_engine_play");
+        println!("cargo:rustc-link-arg=-Wl,-exported_symbol,_audio_engine_pause");
+        println!("cargo:rustc-link-arg=-Wl,-exported_symbol,_audio_engine_stop");
+        println!("cargo:rustc-link-arg=-Wl,-exported_symbol,_audio_engine_seek");
+        println!("cargo:rustc-link-arg=-Wl,-exported_symbol,_audio_engine_set_volume");
+        println!("cargo:rustc-link-arg=-Wl,-exported_symbol,_audio_engine_load_file");
+    }
 }
 
 /// Configure Linux-specific settings
