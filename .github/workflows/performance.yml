@@ -3,11 +3,14 @@ name: Performance Monitoring
 on:
   push:
     branches: [ main ]
+  pull_request:
+    branches: [ main ]
   schedule:
     - cron: '0 0 * * 0'  # Weekly on Sunday at midnight UTC
 
 env:
   CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
 
 jobs:
   benchmark-tracking:
@@ -36,14 +39,89 @@ jobs:
           restore-keys: |
             ubuntu-cargo-
       
-      - name: Install Audio Dependencies
+      - name: Setup audio environment
         run: |
-          sudo apt-get update
-          sudo apt-get install -y libasound2-dev
+          chmod +x scripts/setup_audio.sh
+          ./scripts/setup_audio.sh --ci
+      
+      - name: Download baseline (if exists)
+        continue-on-error: true
+        uses: actions/cache@v4
+        with:
+          path: target/criterion-baseline
+          key: benchmark-baseline-${{ github.ref }}
+          restore-keys: |
+            benchmark-baseline-
       
       - name: Run Benchmarks
         run: cargo bench --bench audio_pipeline
         continue-on-error: true
+      
+      - name: Generate benchmark reports
+        run: |
+          python3 scripts/visualize-benchmarks.py \
+            --criterion-dir target/criterion \
+            --output target/benchmark-reports \
+            --format all
+      
+      - name: Compare against baseline
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        run: |
+          chmod +x scripts/benchmark-regression.sh
+          ./scripts/benchmark-regression.sh compare || echo "::warning::Performance regressions detected"
+      
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results
+          path: |
+            target/benchmark-reports/
+            target/criterion/
+          retention-days: 90
+      
+      - name: Save baseline for main branch
+        if: github.ref == 'refs/heads/main'
+        uses: actions/cache/save@v4
+        with:
+          path: target/criterion
+          key: benchmark-baseline-${{ github.ref }}-${{ github.sha }}
+      
+      - name: Comment PR with results
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        continue-on-error: true
+        with:
+          script: |
+            const fs = require('fs');
+            const reportPath = 'target/benchmark-reports/report.md';
+            
+            if (fs.existsSync(reportPath)) {
+              const report = fs.readFileSync(reportPath, 'utf8');
+              
+              // Truncate if too long
+              const maxLength = 60000;
+              const truncatedReport = report.length > maxLength 
+                ? report.substring(0, maxLength) + '\n\n... (truncated)'
+                : report;
+              
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: `## 📊 Benchmark Results\n\n${truncatedReport}\n\n[View detailed HTML report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})`
+              });
+            }
+      
+      - name: Deploy reports to GitHub Pages
+        if: github.ref == 'refs/heads/main'
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./target/benchmark-reports
+          destination_dir: benchmarks
+          keep_files: true
+          enable_jekyll: false
       
       - name: Store Benchmark Results
         uses: benchmark-action/github-action-benchmark@v1
@@ -59,7 +137,7 @@ jobs:
       
       - name: Alert on Regression
         if: failure()
-        uses: actions/github-script@v6
+        uses: actions/github-script@v7
         with:
           script: |
             github.rest.issues.create({

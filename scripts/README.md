@@ -128,6 +128,50 @@ python3 scripts/analyze-benchmarks.py --help
 
 See [../docs/performance-testing.md](../docs/performance-testing.md) for detailed documentation.
 
+### `visualize-benchmarks.py`
+
+Generate visual reports from benchmark results.
+
+**Usage:**
+
+```bash
+# Generate all formats
+python3 scripts/visualize-benchmarks.py
+
+# Generate HTML only
+python3 scripts/visualize-benchmarks.py --format html
+
+# Custom directories
+python3 scripts/visualize-benchmarks.py \
+    --criterion-dir target/criterion \
+    --output target/benchmark-reports \
+    --format all
+
+# Show help
+python3 scripts/visualize-benchmarks.py --help
+```
+
+**What it does:**
+
+- Generates HTML report with interactive visualizations
+- Generates Markdown report for documentation
+- Saves JSON results for historical tracking
+- Organizes benchmarks by category
+- Shows mean, median, and standard deviation
+
+**Output formats:**
+
+- **HTML**: Interactive web report (`index.html`)
+- **Markdown**: Text report for PRs (`report.md`)
+- **JSON**: Machine-readable data (`latest.json`, `history.jsonl`)
+
+**Requirements:**
+
+- Python 3.6+
+- No external dependencies (uses stdlib only)
+
+See [../docs/performance-testing.md](../docs/performance-testing.md) for detailed documentation.
+
 ## CI Integration
 
 These scripts are used in GitHub Actions workflows:
