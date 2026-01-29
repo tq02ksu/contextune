@@ -6,15 +6,15 @@
 #![warn(missing_docs)]
 #![warn(clippy::all)]
 
+pub mod ai;
 pub mod audio;
 pub mod cue;
-pub mod playlist;
-pub mod library;
-pub mod ai;
-pub mod streaming;
-pub mod ffi;
-pub mod state;
 pub mod error;
+pub mod ffi;
+pub mod library;
+pub mod playlist;
+pub mod state;
+pub mod streaming;
 
 pub use error::{Error, Result};
 

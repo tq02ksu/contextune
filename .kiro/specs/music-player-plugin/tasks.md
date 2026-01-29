@@ -6,8 +6,8 @@
 - [x] 0.1.1 Create main CI workflow (`.github/workflows/ci.yml`)
 - [x] 0.1.2 Create performance monitoring workflow (`.github/workflows/performance.yml`)
 - [x] 0.1.3 Create release workflow (`.github/workflows/release.yml`)
-- [ ] 0.1.4 Configure workflow permissions and secrets
-- [ ] 0.1.5 Set up branch protection rules
+- [x] 0.1.4 Configure workflow permissions and secrets (Manual: See `docs/github-setup.md`)
+- [x] 0.1.5 Set up branch protection rules (Manual: See `docs/github-setup.md`)
 
 ### 0.2 Audio Quality Testing Infrastructure
 - [x] 0.2.1 Create audio quality test framework (`tests/audio_quality.rs`)

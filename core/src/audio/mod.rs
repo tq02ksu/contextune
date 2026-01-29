@@ -2,12 +2,12 @@
 //!
 //! Provides high-fidelity audio playback with bit-perfect accuracy.
 
-pub mod engine;
-pub mod decoder;
-pub mod output;
 pub mod buffer;
-pub mod processor;
+pub mod decoder;
+pub mod engine;
 pub mod format;
+pub mod output;
+pub mod processor;
 
 pub use engine::AudioEngine;
 

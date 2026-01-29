@@ -2,7 +2,7 @@
 //!
 //! Manages playback state and persistence
 
-pub mod playback;
 pub mod persistence;
+pub mod playback;
 
 // Will be implemented in Phase 1 & 3

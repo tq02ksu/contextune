@@ -11,9 +11,7 @@ pub struct AudioEngine {
 impl AudioEngine {
     /// Create a new audio engine
     pub fn new() -> Result<Self> {
-        Ok(Self {
-            _placeholder: (),
-        })
+        Ok(Self { _placeholder: () })
     }
 }
 
