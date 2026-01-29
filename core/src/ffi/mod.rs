@@ -6,4 +6,6 @@ pub mod c_api;
 pub mod jni;
 pub mod types;
 
-// Will be implemented in Phase 1 & 3
+// Re-export commonly used types and functions
+pub use c_api::*;
+pub use types::{AudioEngineHandle, FFIResult};

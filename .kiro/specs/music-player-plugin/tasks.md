@@ -35,11 +35,11 @@
 
 ### 0.5 FFI Safety Testing Framework
 - [x] 0.5.1 Create FFI integration test suite (`tests/ffi_integration.rs`)
-- [ ] 0.5.2 Implement null pointer handling tests
-- [ ] 0.5.3 Implement concurrent access tests
-- [ ] 0.5.4 Implement type conversion validation tests
-- [ ] 0.5.5 Set up fuzzing for FFI interfaces
-- [ ] 0.5.6 Create FFI error handling tests
+- [x] 0.5.2 Implement null pointer handling tests
+- [x] 0.5.3 Implement concurrent access tests
+- [x] 0.5.4 Implement type conversion validation tests
+- [x] 0.5.5 Set up fuzzing for FFI interfaces
+- [x] 0.5.6 Create FFI error handling tests
 
 ### 0.6 Code Coverage Setup
 - [ ] 0.6.1 Install and configure Tarpaulin
