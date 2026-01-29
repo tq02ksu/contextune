@@ -49,10 +49,10 @@
 - [x] 0.6.5 Add coverage badges to README
 
 ### 0.7 Security Audit Setup
-- [ ] 0.7.1 Configure cargo-audit in CI
-- [ ] 0.7.2 Configure cargo-deny for dependency checking
-- [ ] 0.7.3 Set up automated security scanning
-- [ ] 0.7.4 Create security policy documentation
+- [x] 0.7.1 Configure cargo-audit in CI
+- [x] 0.7.2 Configure cargo-deny for dependency checking
+- [x] 0.7.3 Set up automated security scanning
+- [x] 0.7.4 Create security policy documentation
 
 ### 0.8 Local Development Tools
 - [x] 0.8.1 Create local CI script (`scripts/ci-local.sh`)

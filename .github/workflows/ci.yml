@@ -443,14 +443,40 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
       
-      - name: Run Cargo Audit
-        run: |
-          cargo install cargo-audit
-          cargo audit
-        continue-on-error: true
+      - name: Cache Cargo
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ubuntu-cargo-audit-${{ hashFiles('**/Cargo.lock') }}
       
-      - name: Run Cargo Deny
+      - name: Install cargo-audit
+        run: cargo install cargo-audit --locked
+      
+      - name: Run Security Audit
         run: |
-          cargo install cargo-deny
-          cargo deny check
-        continue-on-error: true
+          cd core
+          cargo audit --json > ../target/audit-results.json || true
+          cargo audit
+      
+      - name: Install cargo-deny
+        run: cargo install cargo-deny --locked
+      
+      - name: Run Dependency Check
+        run: |
+          cd core
+          cargo deny-check --hide-inclusion-graph
+      
+      - name: Upload Security Audit Results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: security-audit-results
+          path: |
+            target/audit-results.json
+            target/deny-results.json
+          if-no-files-found: ignore

@@ -1,0 +1,222 @@
+name: Security Scanning
+
+on:
+  schedule:
+    # Run daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  security-audit:
+    name: Daily Security Audit
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+      
+      - name: Cache Cargo
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ubuntu-cargo-security-${{ hashFiles('**/Cargo.lock') }}
+      
+      - name: Install cargo-audit
+        run: cargo install cargo-audit --locked
+      
+      - name: Update advisory database
+        run: cargo audit --update
+      
+      - name: Run comprehensive security audit
+        run: |
+          cd core
+          echo "🔍 Running security audit..."
+          cargo audit --json > ../target/audit-results.json || true
+          cargo audit --format json --output ../target/audit-detailed.json || true
+          cargo audit
+      
+      - name: Install cargo-deny
+        run: cargo install cargo-deny --locked
+      
+      - name: Run dependency policy check
+        run: |
+          cd core
+          echo "🚫 Running dependency policy check..."
+          cargo deny-check --format json > ../target/deny-results.json || true
+          cargo deny-check
+      
+      - name: Check for known vulnerabilities in dependencies
+        run: |
+          cd core
+          echo "🔒 Checking for known vulnerabilities..."
+          cargo audit --deny warnings || echo "Vulnerabilities found - check output above"
+      
+      - name: Upload security scan results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: security-scan-results-${{ github.run_number }}
+          path: |
+            target/audit-results.json
+            target/audit-detailed.json
+            target/deny-results.json
+          retention-days: 30
+      
+      - name: Create security report
+        if: always()
+        run: |
+          echo "# Security Scan Report" > security-report.md
+          echo "Generated on: $(date)" >> security-report.md
+          echo "" >> security-report.md
+          echo "## Audit Results" >> security-report.md
+          if [ -f target/audit-results.json ]; then
+            echo "Audit completed - see artifacts for detailed results" >> security-report.md
+          else
+            echo "Audit failed to generate results" >> security-report.md
+          fi
+          echo "" >> security-report.md
+          echo "## Dependency Policy Check" >> security-report.md
+          if [ -f target/deny-results.json ]; then
+            echo "Policy check completed - see artifacts for detailed results" >> security-report.md
+          else
+            echo "Policy check failed to generate results" >> security-report.md
+          fi
+      
+      - name: Upload security report
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: security-report-${{ github.run_number }}
+          path: security-report.md
+          retention-days: 30
+
+  codeql-analysis:
+    name: CodeQL Security Analysis
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ 'rust' ]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          queries: security-extended,security-and-quality
+      
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+      
+      - name: Install Audio Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libasound2-dev pulseaudio
+      
+      - name: Build Rust code
+        run: |
+          cd core
+          cargo build --release --all-features
+      
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{matrix.language}}"
+
+  dependency-review:
+    name: Dependency Review
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Dependency Review
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: moderate
+          allow-licenses: MIT, Apache-2.0, BSD-2-Clause, BSD-3-Clause, ISC, Unicode-DFS-2016, CC0-1.0, MPL-2.0, Zlib, BSL-1.0
+
+  supply-chain-security:
+    name: Supply Chain Security
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+      
+      - name: Install cargo-supply-chain
+        run: cargo install cargo-supply-chain || echo "cargo-supply-chain not available"
+      
+      - name: Check supply chain
+        run: |
+          cd core
+          # Check for suspicious dependencies
+          cargo tree --format "{p} {r}" | grep -E "(git|path)" || echo "No git/path dependencies found"
+          
+          # List all dependencies with their sources
+          echo "## Dependency Sources" > ../supply-chain-report.md
+          cargo tree --format "{p} from {r}" >> ../supply-chain-report.md
+        continue-on-error: true
+      
+      - name: Upload supply chain report
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: supply-chain-report-${{ github.run_number }}
+          path: supply-chain-report.md
+          retention-days: 30
+
+  security-scorecard:
+    name: OSSF Security Scorecard
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      id-token: write
+      actions: read
+      contents: read
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      
+      - name: Run analysis
+        uses: ossf/scorecard-action@v2.3.1
+        with:
+          results_file: results.sarif
+          results_format: sarif
+          publish_results: true
+      
+      - name: Upload SARIF results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: results.sarif

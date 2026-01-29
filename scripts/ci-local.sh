@@ -79,12 +79,28 @@ fi
 # Optional: Run security audit if cargo-audit is installed
 if command -v cargo-audit &> /dev/null; then
     echo "🔒 Step 7: Running security audit..."
+    cd core
     cargo audit
+    cd ..
     print_status "Security audit"
     echo ""
 else
     echo -e "${YELLOW}⚠ cargo-audit not installed. Skipping security check.${NC}"
     echo "Install with: cargo install cargo-audit"
+    echo ""
+fi
+
+# Optional: Run dependency check if cargo-deny is installed
+if command -v cargo-deny &> /dev/null; then
+    echo "🚫 Step 8: Running dependency check..."
+    cd core
+    cargo deny-check --hide-inclusion-graph
+    cd ..
+    print_status "Dependency check"
+    echo ""
+else
+    echo -e "${YELLOW}⚠ cargo-deny not installed. Skipping dependency check.${NC}"
+    echo "Install with: cargo install cargo-deny"
     echo ""
 fi
 
