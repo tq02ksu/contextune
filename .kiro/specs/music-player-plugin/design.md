@@ -8,52 +8,65 @@ An intelligent music player plugin for IDEs (primarily IntelliJ IDEA, with optio
 
 ### System Components
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                   IDE Plugin Layer (Java/Kotlin)            │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
-│  │   UI Layer   │  │  Keyboard    │  │  Lifecycle   │      │
-│  │  Components  │  │  Shortcuts   │  │  Manager     │      │
-│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘      │
-└─────────┼──────────────────┼──────────────────┼─────────────┘
-          │                  │                  │
-          │            JNI/FFI Bridge                          
-          │                  │                  │
-┌─────────┼──────────────────┼──────────────────┼─────────────┐
-│         │    Rust Audio Core (Native Library) │             │
-│  ┌──────▼───────┐  ┌──────▼───────┐  ┌───────▼──────┐      │
-│  │   Playback   │  │   Playlist   │  │    State     │      │
-│  │  Controller  │  │   Manager    │  │   Manager    │      │
-│  └──────┬───────┘  └──────┬───────┘  └──────────────┘      │
-│         │                  │                                 │
-│  ┌──────▼──────────────────▼───────┐                        │
-│  │    HiFi Audio Engine (Rust)     │                        │
-│  │  • Symphonia (Decoding)         │                        │
-│  │  • cpal (Hardware Access)       │                        │
-│  │  • 64-bit Float Processing      │                        │
-│  │  • Zero-Copy Buffers            │                        │
-│  └──────┬──────────────────────────┘                        │
-└─────────┼──────────────────────────────────────────────────┘
-          │
-┌─────────┼──────────────────────────────────────────────────┐
-│         │         AI & Intelligence Layer                   │
-│  ┌──────▼───────┐  ┌──────────────┐  ┌──────────────┐      │
-│  │ Recommendation│  │   Emotion    │  │     Chat     │      │
-│  │    Engine    │  │   Analyzer   │  │  Interface   │      │
-│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘      │
-│         │                  │                  │             │
-│  ┌──────▼──────────────────▼──────────────────▼───────┐    │
-│  │            AI Classifier & Context Generator       │    │
-│  └────────────────────────────────────────────────────┘    │
-└─────────────────────────────────────────────────────────────┘
-          │                                    │
-┌─────────┼────────────────────────────────────┼─────────────┐
-│         │        Data & Integration Layer    │             │
-│  ┌──────▼───────┐  ┌──────────────┐  ┌──────▼───────┐      │
-│  │    Music     │  │  QQ Music    │  │   Context    │      │
-│  │   Scraper    │  │     API      │  │  Generator   │      │
-│  └──────────────┘  └──────────────┘  └──────────────┘      │
-└─────────────────────────────────────────────────────────────┘
+```mermaid
+graph TB
+    subgraph IDE["IDE Plugin Layer (Java/Kotlin)"]
+        UI[UI Layer Components]
+        KB[Keyboard Shortcuts]
+        LC[Lifecycle Manager]
+    end
+    
+    FFI[JNI/FFI Bridge]
+    
+    subgraph RUST["Rust Audio Core (Native Library)"]
+        PC[Playback Controller]
+        PM[Playlist Manager]
+        SM[State Manager]
+        
+        subgraph ENGINE["HiFi Audio Engine (Rust)"]
+            direction LR
+            SYMP[Symphonia<br/>Decoding] --> CPAL[cpal<br/>Hardware Access]
+            CPAL --> FLOAT[64-bit Float<br/>Processing]
+            FLOAT --> ZERO[Zero-Copy<br/>Buffers]
+            CUE[CUE Parser<br/>Sample-accurate seeking]
+        end
+    end
+    
+    subgraph AI["AI & Intelligence Layer"]
+        REC[Recommendation Engine]
+        EMO[Emotion Analyzer]
+        CHAT[Chat Interface]
+        CLASS[AI Classifier & Context Generator]
+    end
+    
+    subgraph DATA["Data & Integration Layer"]
+        SCRAPER[Music Scraper]
+        QQ[QQ Music API]
+        CTX[Context Generator]
+    end
+    
+    UI --> FFI
+    KB --> FFI
+    LC --> FFI
+    
+    FFI --> PC
+    FFI --> PM
+    FFI --> SM
+    
+    PC --> ENGINE
+    PM --> ENGINE
+    
+    ENGINE --> REC
+    ENGINE --> EMO
+    ENGINE --> CHAT
+    
+    REC --> CLASS
+    EMO --> CLASS
+    CHAT --> CLASS
+    
+    CLASS --> SCRAPER
+    CLASS --> CTX
+    CLASS --> QQ
 ```
 
 ### Component Descriptions
@@ -217,6 +230,141 @@ An intelligent music player plugin for IDEs (primarily IntelliJ IDEA, with optio
 - Automatic track end detection based on CUE timestamps
 
 **Trade-offs**: Requires precise seek implementation and careful buffer management at track boundaries, but provides superior user experience for album playback.
+
+## Entity Relationship Diagram
+
+The following ER diagram illustrates the relationships between key entities in the music player system:
+
+```mermaid
+erDiagram
+    Track ||--o{ PlaylistTrack : contains
+    Playlist ||--o{ PlaylistTrack : has
+    Track ||--o| CueSheet : "references (if cue_virtual)"
+    CueSheet ||--o{ CueTrack : contains
+    CueSheet ||--o{ CueFile : references
+    Track ||--o| MusicRecommendation : "generates"
+    MusicRecommendation ||--|| ContextualInfo : includes
+    Playlist ||--o| PlaylistCriteria : "has (if smart)"
+    PlaybackState ||--o| Track : "currently playing"
+    PlaybackState ||--o| Playlist : "from playlist"
+    UserContext ||--o{ MusicRecommendation : influences
+    
+    Track {
+        string id PK
+        string source "local|qq_music|cue_virtual"
+        string title
+        string artist
+        string album
+        number duration
+        string filePath
+        string format
+        object cueSheet "reference to CUE"
+        array genre "AI classified"
+        array mood "AI classified"
+        number energy
+    }
+    
+    Playlist {
+        string id PK
+        string name
+        string description
+        date createdAt
+        date updatedAt
+        array trackIds "ordered list"
+        boolean isSmartPlaylist
+        object criteria "smart playlist rules"
+    }
+    
+    PlaylistTrack {
+        string playlistId FK
+        string trackId FK
+        number position
+    }
+    
+    CueSheet {
+        string id PK
+        string filePath
+        string performer "album artist"
+        string title "album title"
+        array files "audio files"
+        array tracks "parsed tracks"
+    }
+    
+    CueTrack {
+        number trackNumber
+        string title
+        string performer
+        number startTime
+        number endTime
+        number fileIndex
+    }
+    
+    CueFile {
+        string fileName
+        string fileType
+        string resolvedPath
+    }
+    
+    PlaybackState {
+        string status "playing|paused|stopped"
+        string currentTrackId FK
+        string currentPlaylistId FK
+        number position
+        number volume
+        boolean isMuted
+        string repeatMode
+        boolean shuffleEnabled
+    }
+    
+    UserContext {
+        date timestamp
+        number typingSpeed
+        number errorRate
+        string timeOfDay
+        string inferredMood
+        number stressLevel
+        number focusLevel
+        boolean isInFlowState
+    }
+    
+    MusicRecommendation {
+        string trackId FK
+        number confidence
+        string reasoning
+        object contextualInfo
+    }
+    
+    ContextualInfo {
+        string musicType "classical|modern|other"
+        string background
+        string relevance
+        string visualContent
+        object classicalDetails
+        object modernDetails
+    }
+    
+    PlaylistCriteria {
+        array genres
+        array moods
+        array energyRange
+        array tempoRange
+        boolean hasVocals
+        array instrumentation
+        number maxTracks
+        string sortBy
+        boolean autoUpdate
+    }
+```
+
+### Key Relationships
+
+1. **Track ↔ Playlist**: Many-to-many relationship through PlaylistTrack junction table, allowing tracks to appear in multiple playlists
+2. **Track ↔ CueSheet**: One-to-one optional relationship for virtual tracks created from CUE sheets
+3. **CueSheet ↔ CueTrack/CueFile**: One-to-many relationships representing the parsed structure of a CUE sheet
+4. **PlaybackState ↔ Track/Playlist**: References the currently playing track and its source playlist
+5. **UserContext → MusicRecommendation**: User context influences recommendation generation
+6. **Track → MusicRecommendation**: Recommendations are generated for specific tracks with contextual information
+7. **Playlist ↔ PlaylistCriteria**: Smart playlists have criteria that automatically filter tracks
 
 ## Data Models
 
