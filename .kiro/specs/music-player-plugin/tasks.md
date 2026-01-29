@@ -57,8 +57,8 @@
 ### 0.8 Local Development Tools
 - [x] 0.8.1 Create local CI script (`scripts/ci-local.sh`)
 - [x] 0.8.2 Create pre-commit hooks (Placeholder tests fixed for clippy compliance)
-- [ ] 0.8.3 Document local testing procedures
-- [ ] 0.8.4 Create development environment setup guide
+- [x] 0.8.3 Document local testing procedures
+- [x] 0.8.4 Create development environment setup guide
 
 ## Phase 1: Rust Audio Core Foundation
 
@@ -66,7 +66,7 @@
 - [x] 1.1.1 Initialize Rust workspace with Cargo.toml
 - [x] 1.1.2 Configure library crate type (cdylib, staticlib)
 - [x] 1.1.3 Set up module structure (audio, ffi, utils)
-- [ ] 1.1.4 Configure build.rs for FFI exports
+- [x] 1.1.4 Configure build.rs for FFI exports
 - [x] 1.1.5 Add core dependencies (symphonia, cpal, etc.)
 
 ### 1.2 Basic Audio Engine with cpal

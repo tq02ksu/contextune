@@ -90,3 +90,7 @@ path = "tests/cue_seeking_accuracy.rs"
 [[test]]
 name = "memory_leak_detection"
 path = "tests/memory_leak_detection.rs"
+
+[build-dependencies]
+pkg-config = "0.3"
+chrono = { version = "0.4", features = ["serde"] }

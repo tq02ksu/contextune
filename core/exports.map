@@ -1,0 +1,17 @@
+{
+  global:
+    audio_engine_create;
+    audio_engine_destroy;
+    audio_engine_play;
+    audio_engine_pause;
+    audio_engine_stop;
+    audio_engine_seek;
+    audio_engine_set_volume;
+    audio_engine_load_file;
+    audio_engine_get_state;
+    audio_engine_get_position;
+    audio_engine_get_duration;
+    audio_engine_set_callback;
+  local:
+    *;
+};
