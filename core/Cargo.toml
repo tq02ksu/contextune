@@ -86,3 +86,7 @@ path = "tests/cue_parser_comprehensive.rs"
 [[test]]
 name = "cue_seeking_accuracy"
 path = "tests/cue_seeking_accuracy.rs"
+
+[[test]]
+name = "memory_leak_detection"
+path = "tests/memory_leak_detection.rs"

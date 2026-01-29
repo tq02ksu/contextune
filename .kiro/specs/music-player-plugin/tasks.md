@@ -27,11 +27,11 @@
 - [x] 0.3.6 Set up benchmark result storage and visualization
 
 ### 0.4 Memory Safety Testing
-- [ ] 0.4.1 Configure AddressSanitizer for tests
-- [ ] 0.4.2 Configure MemorySanitizer for tests
-- [ ] 0.4.3 Set up Miri for undefined behavior detection
-- [ ] 0.4.4 Create Valgrind test configuration
-- [ ] 0.4.5 Implement memory leak detection tests
+- [x] 0.4.1 Configure AddressSanitizer for tests
+- [x] 0.4.2 Configure MemorySanitizer for tests
+- [x] 0.4.3 Set up Miri for undefined behavior detection
+- [x] 0.4.4 Create Valgrind test configuration
+- [x] 0.4.5 Implement memory leak detection tests
 
 ### 0.5 FFI Safety Testing Framework
 - [x] 0.5.1 Create FFI integration test suite (`tests/ffi_integration.rs`)
