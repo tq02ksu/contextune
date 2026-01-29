@@ -1,0 +1,72 @@
+[package]
+name = "contexture-core"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "High-fidelity music player core with AI-powered features"
+
+[lib]
+crate-type = ["cdylib", "staticlib", "rlib"]
+name = "contexture_core"
+
+[dependencies]
+# Audio processing
+symphonia.workspace = true
+cpal.workspace = true
+rubato.workspace = true
+dasp.workspace = true
+
+# CUE file parsing
+nom.workspace = true
+
+# FFI
+jni.workspace = true
+
+# Async runtime
+tokio.workspace = true
+crossbeam.workspace = true
+parking_lot.workspace = true
+
+# Data handling
+rusqlite.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+
+# Error handling
+anyhow.workspace = true
+thiserror.workspace = true
+
+# Logging
+tracing.workspace = true
+tracing-subscriber.workspace = true
+
+[dev-dependencies]
+proptest.workspace = true
+criterion.workspace = true
+tempfile.workspace = true
+
+[[bench]]
+name = "audio_pipeline"
+harness = false
+
+[[test]]
+name = "audio_quality"
+path = "tests/audio_quality.rs"
+
+[[test]]
+name = "bit_perfect_verification"
+path = "tests/bit_perfect_verification.rs"
+
+[[test]]
+name = "ffi_integration"
+path = "tests/ffi_integration.rs"
+
+[[test]]
+name = "cue_parser_comprehensive"
+path = "tests/cue_parser_comprehensive.rs"
+
+[[test]]
+name = "cue_seeking_accuracy"
+path = "tests/cue_seeking_accuracy.rs"

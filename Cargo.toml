@@ -1,0 +1,54 @@
+[workspace]
+members = ["core"]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["Contexture Team"]
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/tq02ksu/contexture"
+
+[workspace.dependencies]
+# Audio processing
+symphonia = { version = "0.5", features = ["all"] }
+cpal = "0.15"
+rubato = "0.15"
+dasp = "0.11"
+
+# CUE file parsing
+nom = "7.1"
+
+# FFI
+jni = "0.21"
+
+# Async runtime
+tokio = { version = "1", features = ["full"] }
+crossbeam = "0.8"
+parking_lot = "0.12"
+
+# Data handling
+rusqlite = { version = "0.31", features = ["bundled"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Error handling
+anyhow = "1.0"
+thiserror = "1.0"
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = "0.3"
+
+# Testing
+proptest = "1.0"
+criterion = "0.5"
+tempfile = "3.8"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+
+[profile.bench]
+inherits = "release"

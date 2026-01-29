@@ -101,6 +101,280 @@ graph TB
 - **QQ Music API**: Integrates with QQ Music streaming service
 - **Context Generator**: Produces background information and generated imagery
 
+## Source Code Organization
+
+### Project Structure
+
+The project follows a monorepo structure with clear separation between Rust core and IDE plugin layers:
+
+```
+contexture/
+├── Cargo.toml                    # Rust workspace configuration
+├── README.md                     # Project documentation
+├── LICENSE                       # License file
+│
+├── core/                         # Rust audio core library
+│   ├── Cargo.toml               # Core library dependencies
+│   ├── src/
+│   │   ├── lib.rs               # Library entry point
+│   │   ├── audio/               # Audio engine module
+│   │   │   ├── mod.rs
+│   │   │   ├── engine.rs        # Main audio engine
+│   │   │   ├── decoder.rs       # Audio decoding (Symphonia)
+│   │   │   ├── output.rs        # Audio output (cpal)
+│   │   │   ├── buffer.rs        # Ring buffer implementation
+│   │   │   ├── processor.rs     # 64-bit float processing
+│   │   │   └── format.rs        # Format detection
+│   │   │
+│   │   ├── cue/                 # CUE sheet parsing
+│   │   │   ├── mod.rs
+│   │   │   ├── parser.rs        # CUE file parser
+│   │   │   ├── sheet.rs         # CUE sheet data structures
+│   │   │   └── virtual_track.rs # Virtual track creation
+│   │   │
+│   │   ├── playlist/            # Playlist management
+│   │   │   ├── mod.rs
+│   │   │   ├── manager.rs       # Playlist CRUD operations
+│   │   │   ├── queue.rs         # Playback queue
+│   │   │   └── smart.rs         # Smart playlist logic
+│   │   │
+│   │   ├── library/             # Music library management
+│   │   │   ├── mod.rs
+│   │   │   ├── scanner.rs       # File system scanner
+│   │   │   ├── metadata.rs      # Metadata extraction
+│   │   │   ├── database.rs      # SQLite database
+│   │   │   └── indexer.rs       # Search indexing
+│   │   │
+│   │   ├── ai/                  # AI classification
+│   │   │   ├── mod.rs
+│   │   │   ├── classifier.rs    # Audio classification
+│   │   │   ├── features.rs      # Feature extraction
+│   │   │   └── model.rs         # ML model inference
+│   │   │
+│   │   ├── streaming/           # Streaming integration
+│   │   │   ├── mod.rs
+│   │   │   ├── qq_music.rs      # QQ Music API client
+│   │   │   └── http.rs          # HTTP streaming
+│   │   │
+│   │   ├── ffi/                 # FFI interface
+│   │   │   ├── mod.rs
+│   │   │   ├── c_api.rs         # C-compatible API
+│   │   │   ├── jni.rs           # JNI bindings
+│   │   │   └── types.rs         # FFI type conversions
+│   │   │
+│   │   ├── state/               # State management
+│   │   │   ├── mod.rs
+│   │   │   ├── playback.rs      # Playback state
+│   │   │   └── persistence.rs   # State persistence
+│   │   │
+│   │   └── error.rs             # Error types
+│   │
+│   ├── tests/                   # Integration tests
+│   │   ├── audio_quality.rs     # Audio quality tests
+│   │   ├── bit_perfect_verification.rs
+│   │   ├── ffi_integration.rs   # FFI safety tests
+│   │   ├── cue_parser_comprehensive.rs
+│   │   └── cue_seeking_accuracy.rs
+│   │
+│   ├── benches/                 # Performance benchmarks
+│   │   └── audio_pipeline.rs    # Audio pipeline benchmarks
+│   │
+│   └── examples/                # Usage examples
+│       ├── simple_playback.rs
+│       └── cue_playback.rs
+│
+├── plugin/                      # IntelliJ IDEA plugin
+│   ├── build.gradle.kts         # Gradle build configuration
+│   ├── settings.gradle.kts
+│   ├── gradle.properties
+│   │
+│   ├── src/
+│   │   ├── main/
+│   │   │   ├── kotlin/
+│   │   │   │   └── com/musicplayer/
+│   │   │   │       ├── MusicPlayerPlugin.kt      # Plugin entry point
+│   │   │   │       │
+│   │   │   │       ├── audio/                    # Audio integration
+│   │   │   │       │   ├── RustAudioEngine.kt    # JNI wrapper
+│   │   │   │       │   ├── PlaybackController.kt
+│   │   │   │       │   └── AudioState.kt
+│   │   │   │       │
+│   │   │   │       ├── ui/                       # User interface
+│   │   │   │       │   ├── PlayerPanel.kt        # Main player UI
+│   │   │   │       │   ├── PlaylistView.kt
+│   │   │   │       │   ├── LibraryView.kt
+│   │   │   │       │   ├── ChatPanel.kt
+│   │   │   │       │   └── ContextInfoPanel.kt
+│   │   │   │       │
+│   │   │   │       ├── actions/                  # IDE actions
+│   │   │   │       │   ├── PlayPauseAction.kt
+│   │   │   │       │   ├── NextTrackAction.kt
+│   │   │   │       │   └── PreviousTrackAction.kt
+│   │   │   │       │
+│   │   │   │       ├── services/                 # Plugin services
+│   │   │   │       │   ├── PlaybackService.kt
+│   │   │   │       │   ├── PlaylistService.kt
+│   │   │   │       │   └── LibraryService.kt
+│   │   │   │       │
+│   │   │   │       ├── settings/                 # Settings
+│   │   │   │       │   ├── MusicPlayerSettings.kt
+│   │   │   │       │   └── SettingsConfigurable.kt
+│   │   │   │       │
+│   │   │   │       └── utils/                    # Utilities
+│   │   │   │           ├── NativeLibraryLoader.kt
+│   │   │   │           └── StateSerializer.kt
+│   │   │   │
+│   │   │   └── resources/
+│   │   │       ├── META-INF/
+│   │   │       │   └── plugin.xml               # Plugin manifest
+│   │   │       ├── icons/                       # UI icons
+│   │   │       └── messages/                    # i18n messages
+│   │   │
+│   │   └── test/
+│   │       └── kotlin/
+│   │           └── com/musicplayer/
+│   │               ├── audio/
+│   │               │   └── RustAudioEngineTest.kt
+│   │               └── ui/
+│   │                   └── PlayerPanelTest.kt
+│   │
+│   └── libs/                    # Native libraries
+│       ├── linux-x64/
+│       ├── windows-x64/
+│       └── macos-x64/
+│
+├── scripts/                     # Build and utility scripts
+│   ├── ci-local.sh             # Local CI script
+│   ├── build-native.sh         # Build native libraries
+│   └── generate-test-audio.sh  # Generate test audio files
+│
+├── test_data/                   # Test data
+│   ├── audio/                  # Test audio files
+│   ├── cue_corpus/             # CUE test files
+│   └── reference/              # Reference files for quality tests
+│
+├── docs/                        # Documentation
+│   ├── architecture.md
+│   ├── api.md
+│   ├── ci-cd.md
+│   └── development.md
+│
+└── .github/                     # GitHub configuration
+    ├── workflows/              # CI/CD workflows
+    │   ├── ci.yml
+    │   ├── performance.yml
+    │   └── release.yml
+    └── ISSUE_TEMPLATE/
+```
+
+### Module Responsibilities
+
+#### Rust Core Modules
+
+**`audio/`** - Audio Engine
+- `engine.rs`: Main audio engine orchestration, playback control
+- `decoder.rs`: Audio decoding using Symphonia, format support
+- `output.rs`: Audio output using cpal, device management, exclusive mode
+- `buffer.rs`: Lock-free ring buffer, zero-copy data flow
+- `processor.rs`: 64-bit float processing, volume control, sample rate conversion
+- `format.rs`: Audio format detection and validation
+
+**`cue/`** - CUE Sheet Support
+- `parser.rs`: CUE file parsing using nom, encoding detection
+- `sheet.rs`: CUE sheet data structures (CueSheet, CueTrack, CueFile)
+- `virtual_track.rs`: Virtual track creation, time range mapping
+
+**`playlist/`** - Playlist Management
+- `manager.rs`: Playlist CRUD operations, persistence
+- `queue.rs`: Playback queue management, shuffle/repeat logic
+- `smart.rs`: Smart playlist criteria matching, auto-update
+
+**`library/`** - Music Library
+- `scanner.rs`: File system scanning, recursive directory traversal
+- `metadata.rs`: Metadata extraction from audio files
+- `database.rs`: SQLite database operations, schema management
+- `indexer.rs`: Full-text search indexing, query optimization
+
+**`ai/`** - AI Classification
+- `classifier.rs`: Genre, mood, energy classification
+- `features.rs`: Audio feature extraction (tempo, instrumentation)
+- `model.rs`: ML model loading and inference
+
+**`streaming/`** - Streaming Services
+- `qq_music.rs`: QQ Music API client, authentication, search
+- `http.rs`: HTTP streaming, adaptive bitrate
+
+**`ffi/`** - Foreign Function Interface
+- `c_api.rs`: C-compatible API definitions, memory safety
+- `jni.rs`: JNI bindings for Java/Kotlin integration
+- `types.rs`: Type conversions between Rust and C/Java
+
+**`state/`** - State Management
+- `playback.rs`: Playback state tracking (position, volume, status)
+- `persistence.rs`: State serialization and restoration
+
+#### Plugin Modules (Kotlin)
+
+**`audio/`** - Audio Integration
+- `RustAudioEngine.kt`: JNI wrapper for Rust audio core
+- `PlaybackController.kt`: High-level playback control
+- `AudioState.kt`: Audio state management
+
+**`ui/`** - User Interface
+- `PlayerPanel.kt`: Main player interface with controls
+- `PlaylistView.kt`: Playlist display and management
+- `LibraryView.kt`: Music library browser
+- `ChatPanel.kt`: AI chat interface
+- `ContextInfoPanel.kt`: Contextual information display
+
+**`actions/`** - IDE Actions
+- Keyboard shortcut handlers
+- Menu action implementations
+- Toolbar button actions
+
+**`services/`** - Plugin Services
+- Background services for playback, library scanning
+- IDE lifecycle integration
+- State persistence
+
+**`settings/`** - Configuration
+- Plugin settings UI
+- Preference storage
+- Configuration validation
+
+### Naming Conventions
+
+**Rust**
+- Modules: `snake_case` (e.g., `audio_engine`, `cue_parser`)
+- Types: `PascalCase` (e.g., `AudioEngine`, `CueSheet`)
+- Functions: `snake_case` (e.g., `create_engine`, `parse_cue_file`)
+- Constants: `SCREAMING_SNAKE_CASE` (e.g., `MAX_BUFFER_SIZE`)
+- FFI functions: `extern "C" fn` with `#[no_mangle]` and C naming
+
+**Kotlin**
+- Classes: `PascalCase` (e.g., `MusicPlayerPlugin`, `PlaybackController`)
+- Functions: `camelCase` (e.g., `playTrack`, `pausePlayback`)
+- Properties: `camelCase` (e.g., `currentTrack`, `isPlaying`)
+- Constants: `SCREAMING_SNAKE_CASE` (e.g., `MAX_VOLUME`)
+
+### File Organization Principles
+
+1. **Separation of Concerns**: Each module has a single, well-defined responsibility
+2. **Layered Architecture**: Clear boundaries between audio, business logic, and UI layers
+3. **Testability**: Each module is independently testable with clear interfaces
+4. **FFI Boundary**: All FFI code isolated in `ffi/` module for safety
+5. **Platform Abstraction**: Platform-specific code clearly marked and isolated
+
+### Build Artifacts
+
+**Rust Core**
+- `libmusic_player_core.so` (Linux)
+- `music_player_core.dll` (Windows)
+- `libmusic_player_core.dylib` (macOS)
+
+**Plugin**
+- `music-player-plugin.zip` (IntelliJ plugin distribution)
+
 ## Design Decisions
 
 ### Decision 1: Rust Technology Stack for Audio Core
@@ -1329,6 +1603,659 @@ When a recommendation is made, rich contextual information is displayed:
 - Share playlists with team members
 - Discover what colleagues are listening to
 - Collaborative music recommendations
+
+## Continuous Integration and Deployment (CI/CD)
+
+### Overview
+
+The project uses GitHub Actions for automated testing, quality assurance, and deployment. The CI/CD pipeline ensures code quality, audio fidelity, performance standards, and cross-platform compatibility.
+
+### GitHub Actions Workflow Architecture
+
+```mermaid
+graph LR
+    A[Push/PR] --> B[Build & Test]
+    B --> C[Rust Core Tests]
+    B --> D[Plugin Tests]
+    B --> E[FFI Integration Tests]
+    
+    C --> F[Audio Quality Tests]
+    C --> G[Performance Benchmarks]
+    C --> H[Memory Safety Checks]
+    
+    D --> I[UI Tests]
+    D --> J[Plugin Integration]
+    
+    E --> K[Cross-Platform Build]
+    
+    F --> L[Quality Gate]
+    G --> L
+    H --> L
+    I --> L
+    J --> L
+    K --> L
+    
+    L --> M{Pass?}
+    M -->|Yes| N[Deploy Artifacts]
+    M -->|No| O[Fail & Report]
+```
+
+### CI/CD Workflows
+
+#### 1. Main CI Workflow (`.github/workflows/ci.yml`)
+
+Runs on every push and pull request to validate code quality:
+
+```yaml
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  rust-tests:
+    name: Rust Core Tests
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        rust: [stable, nightly]
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.rust }}
+          components: rustfmt, clippy
+      
+      - name: Cache Cargo
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+      
+      - name: Install Audio Dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libasound2-dev pulseaudio
+      
+      - name: Check Formatting
+        run: cargo fmt --all -- --check
+      
+      - name: Clippy Lints
+        run: cargo clippy --all-targets --all-features -- -D warnings
+      
+      - name: Run Unit Tests
+        run: cargo test --all-features --verbose
+      
+      - name: Run Doc Tests
+        run: cargo test --doc --all-features
+
+  audio-quality-tests:
+    name: Audio Quality Verification
+    runs-on: ubuntu-latest
+    needs: rust-tests
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+      
+      - name: Install Audio Tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y sox libsox-fmt-all pulseaudio
+          # Start PulseAudio with null sink for testing
+          pulseaudio --start
+          pactl load-module module-null-sink sink_name=test_sink
+      
+      - name: Generate Test Signals
+        run: |
+          # Generate reference audio files for testing
+          sox -n -r 44100 -c 2 test_sine_440hz.wav synth 5 sine 440
+          sox -n -r 48000 -c 2 test_sine_1khz.wav synth 5 sine 1000
+          sox -n -r 96000 -c 2 test_whitenoise.wav synth 5 whitenoise
+      
+      - name: Run Audio Quality Tests
+        run: cargo test --test audio_quality -- --nocapture
+      
+      - name: Verify Bit-Perfect Playback
+        run: cargo test --test bit_perfect_verification
+      
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: audio-quality-results
+          path: target/audio_quality_results/
+
+  performance-benchmarks:
+    name: Performance Benchmarks
+    runs-on: ubuntu-latest
+    needs: rust-tests
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+      
+      - name: Install Audio Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libasound2-dev
+      
+      - name: Run Benchmarks
+        run: cargo bench --bench audio_pipeline -- --save-baseline current
+      
+      - name: Compare with Baseline
+        run: |
+          cargo bench --bench audio_pipeline -- --baseline main --save-baseline current
+      
+      - name: Upload Benchmark Results
+        uses: actions/upload-artifact@v3
+        with:
+          name: benchmark-results
+          path: target/criterion/
+      
+      - name: Performance Regression Check
+        run: |
+          # Fail if performance degrades by more than 5%
+          cargo run --bin check_performance_regression
+
+  memory-safety-checks:
+    name: Memory Safety & Leak Detection
+    runs-on: ubuntu-latest
+    needs: rust-tests
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Rust Nightly
+        uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: miri
+      
+      - name: Install Valgrind
+        run: sudo apt-get install -y valgrind
+      
+      - name: Run Miri (Undefined Behavior Detection)
+        run: cargo +nightly miri test
+      
+      - name: Run Tests with AddressSanitizer
+        env:
+          RUSTFLAGS: -Zsanitizer=address
+        run: cargo +nightly test --target x86_64-unknown-linux-gnu
+      
+      - name: Run Valgrind Memory Leak Check
+        run: |
+          cargo build --tests
+          valgrind --leak-check=full --error-exitcode=1 \
+            target/debug/deps/music_player_core-*
+
+  ffi-integration-tests:
+    name: FFI Integration Tests
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    needs: rust-tests
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+      
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+      
+      - name: Build Rust Library
+        run: cargo build --release --lib
+      
+      - name: Run FFI Tests
+        run: cargo test --test ffi_integration
+      
+      - name: Test JNI Bindings
+        run: |
+          cd plugin
+          ./gradlew test --tests "*FFI*"
+
+  plugin-tests:
+    name: IntelliJ Plugin Tests
+    runs-on: ubuntu-latest
+    needs: ffi-integration-tests
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+      
+      - name: Build Rust Core
+        run: cargo build --release
+      
+      - name: Run Plugin Tests
+        run: |
+          cd plugin
+          ./gradlew test
+      
+      - name: Run Plugin Verifier
+        run: |
+          cd plugin
+          ./gradlew runPluginVerifier
+      
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: plugin-test-results
+          path: plugin/build/reports/
+
+  cue-parser-tests:
+    name: CUE Parser Comprehensive Tests
+    runs-on: ubuntu-latest
+    needs: rust-tests
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+      
+      - name: Download CUE Test Corpus
+        run: |
+          # Download diverse CUE files for testing
+          mkdir -p test_data/cue_corpus
+          # Add test CUE files with various encodings and formats
+      
+      - name: Run CUE Parser Tests
+        run: cargo test --test cue_parser_comprehensive
+      
+      - name: Test Sample-Accurate Seeking
+        run: cargo test --test cue_seeking_accuracy
+      
+      - name: Upload CUE Test Results
+        uses: actions/upload-artifact@v3
+        with:
+          name: cue-parser-results
+          path: target/cue_test_results/
+
+  code-coverage:
+    name: Code Coverage
+    runs-on: ubuntu-latest
+    needs: rust-tests
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+      
+      - name: Install Tarpaulin
+        run: cargo install cargo-tarpaulin
+      
+      - name: Generate Coverage
+        run: cargo tarpaulin --out Xml --output-dir coverage
+      
+      - name: Upload to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./coverage/cobertura.xml
+          fail_ci_if_error: true
+      
+      - name: Check Coverage Threshold
+        run: |
+          # Fail if coverage drops below 85%
+          cargo tarpaulin --out Json | jq '.coverage < 85' | grep false
+
+  security-audit:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+      
+      - name: Run Cargo Audit
+        run: |
+          cargo install cargo-audit
+          cargo audit
+      
+      - name: Run Cargo Deny
+        run: |
+          cargo install cargo-deny
+          cargo deny check
+```
+
+#### 2. Performance Monitoring Workflow (`.github/workflows/performance.yml`)
+
+Tracks performance trends over time:
+
+```yaml
+name: Performance Monitoring
+
+on:
+  push:
+    branches: [ main ]
+  schedule:
+    - cron: '0 0 * * 0'  # Weekly on Sunday
+
+jobs:
+  benchmark-tracking:
+    name: Track Performance Trends
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+      
+      - name: Run Benchmarks
+        run: cargo bench --bench audio_pipeline
+      
+      - name: Store Benchmark Results
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          tool: 'cargo'
+          output-file-path: target/criterion/output.json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: true
+      
+      - name: Alert on Regression
+        if: failure()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: 'Performance Regression Detected',
+              body: 'Automated benchmarks detected a performance regression.',
+              labels: ['performance', 'regression']
+            })
+```
+
+#### 3. Release Workflow (`.github/workflows/release.yml`)
+
+Automates building and publishing releases:
+
+```yaml
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-rust-core:
+    name: Build Rust Core
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+          - os: macos-latest
+            target: x86_64-apple-darwin
+          - os: macos-latest
+            target: aarch64-apple-darwin
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      
+      - name: Build Release
+        run: cargo build --release --target ${{ matrix.target }}
+      
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: rust-core-${{ matrix.target }}
+          path: target/${{ matrix.target }}/release/libmusic_player_core.*
+
+  build-plugin:
+    name: Build IntelliJ Plugin
+    runs-on: ubuntu-latest
+    needs: build-rust-core
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+      
+      - name: Download Rust Artifacts
+        uses: actions/download-artifact@v3
+        with:
+          path: plugin/libs/
+      
+      - name: Build Plugin
+        run: |
+          cd plugin
+          ./gradlew buildPlugin
+      
+      - name: Upload Plugin
+        uses: actions/upload-artifact@v3
+        with:
+          name: intellij-plugin
+          path: plugin/build/distributions/*.zip
+
+  create-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: [build-rust-core, build-plugin]
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v3
+        with:
+          path: release-artifacts/
+      
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: release-artifacts/**/*
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+```
+
+### Quality Gates
+
+The CI pipeline enforces the following quality gates:
+
+1. **Code Quality**
+   - All tests must pass (100%)
+   - Code coverage ≥ 85%
+   - No clippy warnings
+   - Proper formatting (rustfmt)
+
+2. **Audio Quality**
+   - Bit-perfect verification passes
+   - THD+N < 0.001%
+   - No audio artifacts detected
+
+3. **Performance**
+   - Decoding latency < 10ms
+   - Memory usage < 150MB
+   - CPU usage < 3% during playback
+   - No performance regression > 5%
+
+4. **Security**
+   - No known vulnerabilities (cargo audit)
+   - No memory leaks (Valgrind)
+   - No undefined behavior (Miri)
+
+5. **Cross-Platform**
+   - Builds successfully on Windows, Linux, macOS
+   - All tests pass on all platforms
+
+### Automated Testing Infrastructure
+
+#### Audio Quality Test Framework
+
+```rust
+// tests/audio_quality.rs
+#[test]
+fn test_bit_perfect_playback() {
+    let reference_file = "test_data/reference_sine_440hz.flac";
+    let output_file = "test_output/playback_output.wav";
+    
+    // Play through audio engine
+    let engine = AudioEngine::new();
+    engine.load(reference_file).unwrap();
+    engine.play_to_file(output_file).unwrap();
+    
+    // Compare checksums
+    let reference_checksum = calculate_audio_checksum(reference_file);
+    let output_checksum = calculate_audio_checksum(output_file);
+    
+    assert_eq!(reference_checksum, output_checksum, 
+               "Audio output is not bit-perfect");
+}
+
+#[test]
+fn test_frequency_response() {
+    // Generate test signals at various frequencies
+    let frequencies = vec![20, 100, 440, 1000, 5000, 10000, 20000];
+    
+    for freq in frequencies {
+        let result = test_frequency_playback(freq);
+        assert!(result.amplitude_deviation < 0.1, 
+                "Frequency response deviation at {}Hz: {}", 
+                freq, result.amplitude_deviation);
+    }
+}
+```
+
+#### FFI Safety Test Framework
+
+```rust
+// tests/ffi_safety.rs
+#[test]
+fn test_ffi_null_pointer_handling() {
+    unsafe {
+        let result = audio_engine_create();
+        assert!(!result.is_null());
+        
+        // Test null pointer handling
+        let invalid_result = audio_engine_load(std::ptr::null_mut(), 
+                                                std::ptr::null());
+        assert_eq!(invalid_result, -1); // Error code
+    }
+}
+
+#[test]
+fn test_ffi_concurrent_access() {
+    use std::sync::Arc;
+    use std::thread;
+    
+    let engine = Arc::new(create_test_engine());
+    let mut handles = vec![];
+    
+    // Spawn multiple threads accessing FFI
+    for _ in 0..10 {
+        let engine_clone = Arc::clone(&engine);
+        let handle = thread::spawn(move || {
+            for _ in 0..100 {
+                unsafe {
+                    audio_engine_get_position(engine_clone.as_ptr());
+                }
+            }
+        });
+        handles.push(handle);
+    }
+    
+    for handle in handles {
+        handle.join().unwrap();
+    }
+}
+```
+
+### Monitoring and Alerting
+
+#### Performance Regression Detection
+
+```rust
+// bin/check_performance_regression.rs
+fn main() {
+    let baseline = load_baseline_metrics("benchmarks/baseline.json");
+    let current = load_current_metrics("target/criterion/output.json");
+    
+    for (test_name, current_time) in current {
+        if let Some(baseline_time) = baseline.get(&test_name) {
+            let regression = (current_time - baseline_time) / baseline_time;
+            
+            if regression > 0.05 {  // 5% threshold
+                eprintln!("Performance regression detected in {}: {:.2}%", 
+                         test_name, regression * 100.0);
+                std::process::exit(1);
+            }
+        }
+    }
+    
+    println!("No performance regressions detected");
+}
+```
+
+### Local Development Integration
+
+Developers can run the same CI checks locally:
+
+```bash
+# Run all checks locally
+./scripts/ci-local.sh
+
+# Individual checks
+cargo fmt --check
+cargo clippy -- -D warnings
+cargo test --all-features
+cargo bench
+cargo tarpaulin --out Html
+```
+
+### Documentation
+
+All CI/CD workflows are documented in:
+- `.github/workflows/README.md` - Workflow documentation
+- `docs/ci-cd.md` - Detailed CI/CD guide
+- `CONTRIBUTING.md` - Contribution guidelines with CI requirements
 
 ## Appendix
 
