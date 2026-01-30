@@ -1,15 +1,12 @@
 package com.contextune.plugin.utils
 
-import kotlin.test.Test
-import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
+import com.intellij.testFramework.fixtures.BasePlatformTestCase
 
 /**
  * Tests for NativeLibraryLoader
  */
-class NativeLibraryLoaderTest {
+class NativeLibraryLoaderTest : BasePlatformTestCase() {
     
-    @Test
     fun `test platform detection`() {
         // This test just verifies that platform detection doesn't throw exceptions
         val osName = System.getProperty("os.name")
@@ -22,7 +19,6 @@ class NativeLibraryLoaderTest {
         println("Detected Architecture: $osArch")
     }
     
-    @Test
     fun `test library name generation`() {
         // Test that we can determine the library name without errors
         val osName = System.getProperty("os.name").lowercase()
@@ -32,6 +28,6 @@ class NativeLibraryLoaderTest {
                          osName.contains("darwin") || 
                          osName.contains("linux")
         
-        assertTrue(isSupported, "Platform should be supported")
+        assertTrue("Platform should be supported", isSupported)
     }
 }
