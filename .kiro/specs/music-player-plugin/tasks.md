@@ -281,12 +281,12 @@
 - [x] 4.2.5 Write FFI playlist tests
 
 ### 4.3 Playlist UI in Plugin Layer
-- [ ] 4.3.1 Design playlist view component
-- [ ] 4.3.2 Implement playlist list view
-- [ ] 4.3.3 Implement track list view
-- [ ] 4.3.4 Add drag-and-drop reordering
-- [ ] 4.3.5 Implement context menu actions
-- [ ] 4.3.6 Write playlist UI tests
+- [x] 4.3.1 Design playlist view component
+- [x] 4.3.2 Implement playlist list view
+- [x] 4.3.3 Implement track list view
+- [x] 4.3.4 Add drag-and-drop reordering
+- [x] 4.3.5 Implement context menu actions
+- [x] 4.3.6 Write playlist UI tests
 
 ### 4.4 Track Reordering and Removal
 - [ ] 4.4.1 Implement track reordering logic
