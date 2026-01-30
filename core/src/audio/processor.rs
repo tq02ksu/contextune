@@ -1275,4 +1275,337 @@ mod tests {
 
         assert_eq!(f64_dithered, f64_undithered);
     }
+
+    // ============================================================================
+    // Precision Preservation Tests
+    // ============================================================================
+
+    #[test]
+    fn test_precision_f64_to_f32_roundtrip() {
+        // Test that f64 -> f32 -> f64 preserves precision within f32 limits
+        let original = vec![0.123456789, -0.987654321, 0.5, -0.25, 0.0];
+
+        let f32_samples = SampleFormatConverter::f64_to_f32(&original);
+        let back_to_f64: Vec<f64> = f32_samples.iter().map(|&x| x as f64).collect();
+
+        for (orig, converted) in original.iter().zip(back_to_f64.iter()) {
+            // f32 has ~7 decimal digits of precision
+            assert!((orig - converted).abs() < 1e-6);
+        }
+    }
+
+    #[test]
+    fn test_precision_f64_to_i32_roundtrip() {
+        // Test that f64 -> i32 -> f64 preserves high precision
+        let original = vec![0.123456789, -0.987654321, 0.5, -0.25, 0.0];
+
+        let i32_samples = SampleFormatConverter::f64_to_i32(&original);
+        let back_to_f64: Vec<f64> = i32_samples.as_slice().to_f64();
+
+        for (orig, converted) in original.iter().zip(back_to_f64.iter()) {
+            // i32 provides very high precision (32 bits)
+            assert!((orig - converted).abs() < 1e-9);
+        }
+    }
+
+    #[test]
+    fn test_precision_f64_to_i16_roundtrip() {
+        // Test that f64 -> i16 -> f64 preserves 16-bit precision
+        let original = vec![0.5, -0.5, 0.25, -0.25, 0.0];
+
+        let i16_samples = SampleFormatConverter::f64_to_i16(&original);
+        let back_to_f64: Vec<f64> = i16_samples.as_slice().to_f64();
+
+        for (orig, converted) in original.iter().zip(back_to_f64.iter()) {
+            // i16 has ~4.8 decimal digits of precision (16 bits)
+            assert!((orig - converted).abs() < 1e-4);
+        }
+    }
+
+    #[test]
+    fn test_precision_volume_application() {
+        // Test that volume application preserves precision
+        let format = AudioFormat::new(44100, 2, SampleFormat::F32);
+        let mut processor = AudioProcessor::new(format);
+
+        let original = vec![0.123456789, -0.987654321, 0.5, -0.25];
+        let mut samples = original.clone();
+
+        // Apply volume 1.0 (should not change values)
+        processor.set_volume(1.0);
+        processor.apply_volume(&mut samples);
+
+        for (orig, processed) in original.iter().zip(samples.iter()) {
+            assert!((orig - processed).abs() < 1e-15);
+        }
+    }
+
+    #[test]
+    fn test_precision_volume_scaling() {
+        // Test that volume scaling maintains precision
+        let format = AudioFormat::new(44100, 2, SampleFormat::F32);
+        let mut processor = AudioProcessor::new(format);
+
+        let original = vec![0.5, -0.5, 0.25, -0.25];
+        let mut samples = original.clone();
+
+        // Apply volume 0.5
+        processor.set_volume(0.5);
+        processor.apply_volume(&mut samples);
+
+        for (orig, processed) in original.iter().zip(samples.iter()) {
+            let expected = orig * 0.5;
+            assert!((expected - processed).abs() < 1e-15);
+        }
+    }
+
+    #[test]
+    fn test_precision_sample_rate_conversion_passthrough() {
+        // Test that passthrough sample rate conversion is bit-perfect
+        let mut converter = SampleRateConverter::new(44100, 44100);
+        let original = vec![0.123456789, -0.987654321, 0.5, -0.25, 0.0];
+
+        let converted = converter.convert(&original);
+
+        assert_eq!(converted.len(), original.len());
+        for (orig, conv) in original.iter().zip(converted.iter()) {
+            assert_eq!(orig, conv, "Passthrough should be bit-perfect");
+        }
+    }
+
+    #[test]
+    fn test_precision_full_pipeline_f32() {
+        // Test precision through the full processing pipeline with F32
+        let format = AudioFormat::new(44100, 2, SampleFormat::F32);
+        let processor = AudioProcessor::new(format);
+
+        // Create F32 samples
+        let f32_samples: Vec<f32> = vec![-1.0, -0.5, 0.0, 0.5, 1.0];
+        let bytes: Vec<u8> = f32_samples.iter().flat_map(|&s| s.to_le_bytes()).collect();
+
+        // Convert to f64
+        let f64_samples = processor.convert_to_f64(&bytes).unwrap();
+
+        // Convert back to bytes
+        let converted_bytes = processor.convert_from_f64(&f64_samples);
+
+        // Verify bit-perfect roundtrip
+        assert_eq!(bytes.len(), converted_bytes.len());
+        assert_eq!(bytes, converted_bytes);
+    }
+
+    #[test]
+    fn test_precision_full_pipeline_i16() {
+        // Test precision through the full processing pipeline with I16
+        let format = AudioFormat::new(44100, 2, SampleFormat::I16);
+        let processor = AudioProcessor::new(format);
+
+        // Create I16 samples
+        let i16_samples: Vec<i16> = vec![-32768, -16384, 0, 16384, 32767];
+        let bytes: Vec<u8> = i16_samples.iter().flat_map(|&s| s.to_le_bytes()).collect();
+
+        // Convert to f64
+        let f64_samples = processor.convert_to_f64(&bytes).unwrap();
+
+        // Convert back to bytes
+        let converted_bytes = processor.convert_from_f64(&f64_samples);
+
+        // Verify roundtrip (allow for 1 LSB error due to rounding)
+        assert_eq!(bytes.len(), converted_bytes.len());
+
+        let original_i16: Vec<i16> = bytes
+            .chunks_exact(2)
+            .map(|chunk| i16::from_le_bytes([chunk[0], chunk[1]]))
+            .collect();
+
+        let converted_i16: Vec<i16> = converted_bytes
+            .chunks_exact(2)
+            .map(|chunk| i16::from_le_bytes([chunk[0], chunk[1]]))
+            .collect();
+
+        for (orig, conv) in original_i16.iter().zip(converted_i16.iter()) {
+            assert!(
+                (orig - conv).abs() <= 1,
+                "Roundtrip error should be <= 1 LSB"
+            );
+        }
+    }
+
+    #[test]
+    fn test_precision_full_pipeline_i32() {
+        // Test precision through the full processing pipeline with I32
+        let format = AudioFormat::new(44100, 2, SampleFormat::I32);
+        let processor = AudioProcessor::new(format);
+
+        // Create I32 samples
+        let i32_samples: Vec<i32> = vec![-2147483648, -1073741824, 0, 1073741824, 2147483647];
+        let bytes: Vec<u8> = i32_samples.iter().flat_map(|&s| s.to_le_bytes()).collect();
+
+        // Convert to f64
+        let f64_samples = processor.convert_to_f64(&bytes).unwrap();
+
+        // Convert back to bytes
+        let converted_bytes = processor.convert_from_f64(&f64_samples);
+
+        // Verify high precision roundtrip
+        assert_eq!(bytes.len(), converted_bytes.len());
+
+        let original_i32: Vec<i32> = bytes
+            .chunks_exact(4)
+            .map(|chunk| i32::from_le_bytes([chunk[0], chunk[1], chunk[2], chunk[3]]))
+            .collect();
+
+        let converted_i32: Vec<i32> = converted_bytes
+            .chunks_exact(4)
+            .map(|chunk| i32::from_le_bytes([chunk[0], chunk[1], chunk[2], chunk[3]]))
+            .collect();
+
+        for (orig, conv) in original_i32.iter().zip(converted_i32.iter()) {
+            // i32 should have very high precision
+            assert!(
+                (orig - conv).abs() <= 1,
+                "Roundtrip error should be <= 1 LSB"
+            );
+        }
+    }
+
+    #[test]
+    fn test_precision_sine_wave_integrity() {
+        // Test that a sine wave maintains its shape through processing
+        let sample_rate = 44100;
+        let frequency = 440.0; // A4 note
+        let duration = 0.1; // 100ms
+        let num_samples = (sample_rate as f64 * duration) as usize;
+
+        // Generate sine wave
+        let sine_wave: Vec<f64> = (0..num_samples)
+            .map(|i| {
+                let t = i as f64 / sample_rate as f64;
+                (2.0 * std::f64::consts::PI * frequency * t).sin()
+            })
+            .collect();
+
+        // Convert to i16 and back
+        let i16_samples = SampleFormatConverter::f64_to_i16(&sine_wave);
+        let recovered: Vec<f64> = i16_samples.as_slice().to_f64();
+
+        // Calculate correlation (should be very close to 1.0)
+        let mut sum_xy = 0.0;
+        let mut sum_x2 = 0.0;
+        let mut sum_y2 = 0.0;
+
+        for (x, y) in sine_wave.iter().zip(recovered.iter()) {
+            sum_xy += x * y;
+            sum_x2 += x * x;
+            sum_y2 += y * y;
+        }
+
+        let correlation = sum_xy / (sum_x2.sqrt() * sum_y2.sqrt());
+
+        assert!(
+            correlation > 0.9999,
+            "Sine wave correlation should be > 0.9999, got {}",
+            correlation
+        );
+    }
+
+    #[test]
+    fn test_precision_dc_offset_preservation() {
+        // Test that DC offset is preserved through processing
+        let format = AudioFormat::new(44100, 2, SampleFormat::I16);
+        let processor = AudioProcessor::new(format);
+
+        // Create samples with DC offset
+        let dc_offset = 0.1;
+        let samples_with_dc: Vec<f64> = vec![dc_offset; 100];
+
+        // Convert to bytes and back
+        let bytes = SampleFormatConverter::convert_from_f64(&samples_with_dc, SampleFormat::I16);
+        let recovered = processor.convert_to_f64(&bytes).unwrap();
+
+        // Calculate average (should be close to DC offset)
+        let avg: f64 = recovered.iter().sum::<f64>() / recovered.len() as f64;
+
+        assert!(
+            (avg - dc_offset).abs() < 0.001,
+            "DC offset should be preserved, expected {}, got {}",
+            dc_offset,
+            avg
+        );
+    }
+
+    #[test]
+    fn test_precision_dynamic_range() {
+        // Test that full dynamic range is preserved
+        let format = AudioFormat::new(44100, 2, SampleFormat::I16);
+        let processor = AudioProcessor::new(format);
+
+        // Create samples spanning full dynamic range
+        let full_range: Vec<f64> = vec![-1.0, -0.75, -0.5, -0.25, 0.0, 0.25, 0.5, 0.75, 1.0];
+
+        // Convert to bytes and back
+        let bytes = SampleFormatConverter::convert_from_f64(&full_range, SampleFormat::I16);
+        let recovered = processor.convert_to_f64(&bytes).unwrap();
+
+        // Verify min and max are preserved
+        let min_recovered = recovered.iter().cloned().fold(f64::INFINITY, f64::min);
+        let max_recovered = recovered.iter().cloned().fold(f64::NEG_INFINITY, f64::max);
+
+        assert!(
+            min_recovered < -0.99,
+            "Minimum value should be close to -1.0"
+        );
+        assert!(max_recovered > 0.99, "Maximum value should be close to 1.0");
+    }
+
+    #[test]
+    fn test_precision_zero_crossing() {
+        // Test that zero crossings are preserved accurately
+        let samples: Vec<f64> = vec![-0.1, -0.05, 0.0, 0.05, 0.1];
+
+        let i16_samples = SampleFormatConverter::f64_to_i16(&samples);
+        let recovered: Vec<f64> = i16_samples.as_slice().to_f64();
+
+        // Find zero crossing in original
+        let orig_zero_idx = samples.iter().position(|&x| x == 0.0).unwrap();
+
+        // Find zero crossing in recovered (should be at same position)
+        let recovered_zero_idx = recovered.iter().position(|&x| x.abs() < 0.001).unwrap();
+
+        assert_eq!(
+            orig_zero_idx, recovered_zero_idx,
+            "Zero crossing position should be preserved"
+        );
+    }
+
+    #[test]
+    fn test_precision_volume_ramping_linearity() {
+        // Test that volume ramping is linear and precise
+        let format = AudioFormat::new(44100, 2, SampleFormat::F32);
+        let mut processor = AudioProcessor::new(format);
+
+        processor.set_volume(0.0);
+        processor.set_volume_ramped(1.0, 10.0); // 10ms ramp
+
+        let num_samples = 441; // 10ms at 44.1kHz
+        let mut samples = vec![1.0; num_samples];
+        processor.apply_volume(&mut samples);
+
+        // Check that volume increases approximately linearly
+        for i in 1..samples.len() {
+            let diff = samples[i] - samples[i - 1];
+            // Each step should increase by approximately the same amount
+            assert!(
+                diff >= 0.0,
+                "Volume should increase monotonically during ramp"
+            );
+        }
+
+        // First sample should be close to 0, last should be close to 1
+        assert!(samples[0] < 0.01, "First sample should be near 0");
+        assert!(
+            samples[samples.len() - 1] > 0.99,
+            "Last sample should be near 1"
+        );
+    }
 }

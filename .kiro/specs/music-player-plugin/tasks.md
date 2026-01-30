@@ -98,7 +98,7 @@
 - [x] 1.5.2 Add volume control in 64-bit precision
 - [x] 1.5.3 Implement sample rate conversion (if needed)
 - [x] 1.5.4 Add dithering for output conversion
-- [ ] 1.5.5 Write tests for precision preservation
+- [x] 1.5.5 Write tests for precision preservation
 
 ### 1.6 JNI Wrapper for Java Integration
 - [ ] 1.6.1 Define C-compatible FFI interface
