@@ -87,11 +87,7 @@ fn test_concurrent_single_producer_single_consumer() {
     assert!(read > 1000, "Should have read at least 1000 samples");
 
     // Read should be close to written (within buffer capacity)
-    let diff = if written > read {
-        written - read
-    } else {
-        read - written
-    };
+    let diff = written.abs_diff(read);
     assert!(
         diff < consumer.capacity(),
         "Difference should be less than buffer capacity"

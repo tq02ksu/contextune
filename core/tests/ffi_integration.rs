@@ -133,7 +133,7 @@ mod concurrent_access_tests {
                     thread::spawn(move || {
                         barrier.wait();
                         let volume = (i as f64) / (NUM_THREADS as f64);
-                        unsafe { audio_engine_set_volume(handle, volume) }
+                        audio_engine_set_volume(handle, volume)
                     })
                 })
                 .collect();
@@ -159,12 +159,10 @@ mod concurrent_access_tests {
                     let barrier = Arc::clone(&barrier);
                     thread::spawn(move || {
                         barrier.wait();
-                        unsafe {
-                            match i % 3 {
-                                0 => audio_engine_play(handle),
-                                1 => audio_engine_pause(handle),
-                                _ => audio_engine_stop(handle),
-                            }
+                        match i % 3 {
+                            0 => audio_engine_play(handle),
+                            1 => audio_engine_pause(handle),
+                            _ => audio_engine_stop(handle),
                         }
                     })
                 })
@@ -197,7 +195,7 @@ mod concurrent_access_tests {
                     thread::spawn(move || {
                         barrier.wait();
                         let mut position = 0.0;
-                        unsafe { audio_engine_get_position(handle, &mut position) }
+                        audio_engine_get_position(handle, &mut position)
                     })
                 })
                 .collect();

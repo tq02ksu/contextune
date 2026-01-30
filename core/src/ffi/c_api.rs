@@ -853,7 +853,7 @@ mod tests {
             // Get initial volume
             let result = audio_engine_get_volume(handle, &mut volume);
             assert_eq!(result, FFIResult::Success);
-            assert!(volume >= 0.0 && volume <= 1.0);
+            assert!((0.0..=1.0).contains(&volume));
 
             // Set and get volume
             audio_engine_set_volume(handle, 0.75);

@@ -1648,8 +1648,7 @@ mod tests {
         // With device (if available)
         if engine.init_default_device().is_ok() {
             let formats = engine.supported_formats();
-            if formats.is_ok() {
-                let formats = formats.unwrap();
+            if let Ok(formats) = formats {
                 // Should have at least one supported format
                 assert!(!formats.is_empty());
             }
@@ -1684,8 +1683,7 @@ mod tests {
 
         // Test device enumeration
         let result = engine.enumerate_output_devices();
-        if result.is_ok() {
-            let devices = result.unwrap();
+        if let Ok(devices) = result {
             // Should have at least one device in most environments
             // In CI environments without audio, this might be empty
             for device in &devices {
@@ -1747,8 +1745,7 @@ mod tests {
         // With device (if available)
         if engine.init_default_device().is_ok() {
             let result = engine.negotiate_format(&preferred_format);
-            if result.is_ok() {
-                let negotiated = result.unwrap();
+            if let Ok(negotiated) = result {
                 // Should return a valid format
                 assert!(negotiated.sample_rate > 0);
                 assert!(negotiated.channels > 0);
@@ -1767,8 +1764,7 @@ mod tests {
         // With device (if available)
         if engine.init_default_device().is_ok() {
             let result = engine.get_best_format();
-            if result.is_ok() {
-                let best_format = result.unwrap();
+            if let Ok(best_format) = result {
                 // Should return a valid high-quality format
                 assert!(best_format.sample_rate >= 44100);
                 assert!(best_format.channels >= 1);
@@ -1789,9 +1785,8 @@ mod tests {
         // With device (if available)
         if engine.init_default_device().is_ok() {
             let result = engine.is_format_supported(&test_format);
-            if result.is_ok() {
+            if let Ok(_is_supported) = result {
                 // Should return a boolean result
-                let _is_supported = result.unwrap();
             }
         }
     }
@@ -1900,8 +1895,7 @@ mod tests {
 
                 // Test that we can get supported formats
                 let formats_result = engine.supported_formats();
-                if formats_result.is_ok() {
-                    let formats = formats_result.unwrap();
+                if let Ok(formats) = formats_result {
                     assert!(!formats.is_empty());
                 }
             }
@@ -1914,8 +1908,7 @@ mod tests {
 
         // Test device enumeration
         let devices_result = engine.enumerate_output_devices();
-        if devices_result.is_ok() {
-            let devices = devices_result.unwrap();
+        if let Ok(devices) = devices_result {
             if !devices.is_empty() {
                 // Test creating engine with specific device
                 // Note: We can't easily test this without access to actual Device objects

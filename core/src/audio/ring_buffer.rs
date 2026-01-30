@@ -657,11 +657,16 @@ mod tests {
         // The first part should be the remaining 1.0 samples (capacity - 10 - 5 = capacity - 15)
         // The last 10 samples should be the 2.0 samples that wrapped around
         let remaining_ones = capacity - 15; // We wrote capacity-10, read 5, so capacity-15 remain
-        for i in 0..remaining_ones {
-            assert_eq!(output2[i], 1.0);
+        for (i, &sample) in output2.iter().take(remaining_ones).enumerate() {
+            assert_eq!(sample, 1.0, "Sample at index {} should be 1.0", i);
         }
-        for i in remaining_ones..output2.len() {
-            assert_eq!(output2[i], 2.0);
+        for (i, &sample) in output2.iter().skip(remaining_ones).enumerate() {
+            assert_eq!(
+                sample,
+                2.0,
+                "Sample at index {} should be 2.0",
+                i + remaining_ones
+            );
         }
     }
 

@@ -1009,7 +1009,7 @@ mod tests {
 
         // Check that interpolated values are between input samples
         for &sample in &output {
-            assert!(sample >= 0.0 && sample <= 1.0);
+            assert!((0.0..=1.0).contains(&sample));
         }
     }
 
@@ -1069,7 +1069,7 @@ mod tests {
 
         // All samples should be in valid range [-1, 1]
         for &sample in &output {
-            assert!(sample >= -1.1 && sample <= 1.1);
+            assert!((-1.1..=1.1).contains(&sample));
         }
     }
 
@@ -1247,7 +1247,7 @@ mod tests {
         // Higher bit depths should have smaller dither amplitude
         // (though this is hard to test precisely due to randomness)
         for &sample in &dithered_8bit {
-            assert!(sample >= 0.4 && sample <= 0.6);
+            assert!((0.4..=0.6).contains(&sample));
         }
     }
 

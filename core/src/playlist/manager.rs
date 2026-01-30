@@ -186,84 +186,107 @@ impl PlaylistManager {
     pub fn create_playlist(&self, name: String) -> Result<String> {
         let playlist = Playlist::new(name);
         let id = playlist.id.clone();
-        
-        let mut playlists = self.playlists.write()
+
+        let mut playlists = self
+            .playlists
+            .write()
             .map_err(|e| Error::Playlist(format!("Failed to acquire write lock: {}", e)))?;
-        
+
         playlists.insert(id.clone(), playlist);
         Ok(id)
     }
 
     /// Get a playlist by ID
     pub fn get_playlist(&self, id: &str) -> Result<Playlist> {
-        let playlists = self.playlists.read()
+        let playlists = self
+            .playlists
+            .read()
             .map_err(|e| Error::Playlist(format!("Failed to acquire read lock: {}", e)))?;
-        
-        playlists.get(id)
+
+        playlists
+            .get(id)
             .cloned()
             .ok_or_else(|| Error::Playlist(format!("Playlist not found: {}", id)))
     }
 
     /// Update a playlist
     pub fn update_playlist(&self, playlist: Playlist) -> Result<()> {
-        let mut playlists = self.playlists.write()
+        let mut playlists = self
+            .playlists
+            .write()
             .map_err(|e| Error::Playlist(format!("Failed to acquire write lock: {}", e)))?;
-        
+
         if !playlists.contains_key(&playlist.id) {
-            return Err(Error::Playlist(format!("Playlist not found: {}", playlist.id)));
+            return Err(Error::Playlist(format!(
+                "Playlist not found: {}",
+                playlist.id
+            )));
         }
-        
+
         playlists.insert(playlist.id.clone(), playlist);
         Ok(())
     }
 
     /// Delete a playlist by ID
     pub fn delete_playlist(&self, id: &str) -> Result<()> {
-        let mut playlists = self.playlists.write()
+        let mut playlists = self
+            .playlists
+            .write()
             .map_err(|e| Error::Playlist(format!("Failed to acquire write lock: {}", e)))?;
-        
-        playlists.remove(id)
+
+        playlists
+            .remove(id)
             .ok_or_else(|| Error::Playlist(format!("Playlist not found: {}", id)))?;
-        
+
         Ok(())
     }
 
     /// List all playlists
     pub fn list_playlists(&self) -> Result<Vec<Playlist>> {
-        let playlists = self.playlists.read()
+        let playlists = self
+            .playlists
+            .read()
             .map_err(|e| Error::Playlist(format!("Failed to acquire read lock: {}", e)))?;
-        
+
         Ok(playlists.values().cloned().collect())
     }
 
     /// Get playlist count
     pub fn playlist_count(&self) -> Result<usize> {
-        let playlists = self.playlists.read()
+        let playlists = self
+            .playlists
+            .read()
             .map_err(|e| Error::Playlist(format!("Failed to acquire read lock: {}", e)))?;
-        
+
         Ok(playlists.len())
     }
 
     /// Add a track to a playlist
     pub fn add_track_to_playlist(&self, playlist_id: &str, track: Track) -> Result<()> {
-        let mut playlists = self.playlists.write()
+        let mut playlists = self
+            .playlists
+            .write()
             .map_err(|e| Error::Playlist(format!("Failed to acquire write lock: {}", e)))?;
-        
-        let playlist = playlists.get_mut(playlist_id)
+
+        let playlist = playlists
+            .get_mut(playlist_id)
             .ok_or_else(|| Error::Playlist(format!("Playlist not found: {}", playlist_id)))?;
-        
+
         playlist.add_track(track);
         Ok(())
     }
 
     /// Remove a track from a playlist
     pub fn remove_track_from_playlist(&self, playlist_id: &str, track_index: usize) -> Result<()> {
-        let mut playlists = self.playlists.write()
+        let mut playlists = self
+            .playlists
+            .write()
             .map_err(|e| Error::Playlist(format!("Failed to acquire write lock: {}", e)))?;
-        
-        let playlist = playlists.get_mut(playlist_id)
+
+        let playlist = playlists
+            .get_mut(playlist_id)
             .ok_or_else(|| Error::Playlist(format!("Playlist not found: {}", playlist_id)))?;
-        
+
         playlist.remove_track(track_index)?;
         Ok(())
     }
@@ -275,12 +298,15 @@ impl PlaylistManager {
         from_index: usize,
         to_index: usize,
     ) -> Result<()> {
-        let mut playlists = self.playlists.write()
+        let mut playlists = self
+            .playlists
+            .write()
             .map_err(|e| Error::Playlist(format!("Failed to acquire write lock: {}", e)))?;
-        
-        let playlist = playlists.get_mut(playlist_id)
+
+        let playlist = playlists
+            .get_mut(playlist_id)
             .ok_or_else(|| Error::Playlist(format!("Playlist not found: {}", playlist_id)))?;
-        
+
         playlist.move_track(from_index, to_index)?;
         Ok(())
     }
@@ -289,17 +315,20 @@ impl PlaylistManager {
     pub fn shuffle_playlist(&self, playlist_id: &str) -> Result<()> {
         use rand::seq::SliceRandom;
         use rand::thread_rng;
-        
-        let mut playlists = self.playlists.write()
+
+        let mut playlists = self
+            .playlists
+            .write()
             .map_err(|e| Error::Playlist(format!("Failed to acquire write lock: {}", e)))?;
-        
-        let playlist = playlists.get_mut(playlist_id)
+
+        let playlist = playlists
+            .get_mut(playlist_id)
             .ok_or_else(|| Error::Playlist(format!("Playlist not found: {}", playlist_id)))?;
-        
+
         let mut rng = thread_rng();
         playlist.tracks.shuffle(&mut rng);
         playlist.modified_at = chrono::Utc::now().timestamp();
-        
+
         Ok(())
     }
 }
@@ -357,7 +386,7 @@ mod tests {
         let mut playlist = Playlist::new("Test".to_string());
         playlist.add_track(Track::new("/song1.mp3".to_string()));
         playlist.add_track(Track::new("/song2.mp3".to_string()));
-        
+
         let removed = playlist.remove_track(0).unwrap();
         assert_eq!(removed.file_path, "/song1.mp3");
         assert_eq!(playlist.tracks.len(), 1);
@@ -369,7 +398,7 @@ mod tests {
         playlist.add_track(Track::new("/song1.mp3".to_string()));
         playlist.add_track(Track::new("/song2.mp3".to_string()));
         playlist.add_track(Track::new("/song3.mp3".to_string()));
-        
+
         playlist.move_track(0, 2).unwrap();
         assert_eq!(playlist.tracks[2].file_path, "/song1.mp3");
     }
@@ -377,9 +406,11 @@ mod tests {
     #[test]
     fn test_manager_create_playlist() {
         let manager = PlaylistManager::new();
-        let id = manager.create_playlist("Test Playlist".to_string()).unwrap();
+        let id = manager
+            .create_playlist("Test Playlist".to_string())
+            .unwrap();
         assert!(!id.is_empty());
-        
+
         let playlist = manager.get_playlist(&id).unwrap();
         assert_eq!(playlist.name, "Test Playlist");
     }
@@ -388,7 +419,7 @@ mod tests {
     fn test_manager_delete_playlist() {
         let manager = PlaylistManager::new();
         let id = manager.create_playlist("Test".to_string()).unwrap();
-        
+
         manager.delete_playlist(&id).unwrap();
         assert!(manager.get_playlist(&id).is_err());
     }
@@ -398,7 +429,7 @@ mod tests {
         let manager = PlaylistManager::new();
         manager.create_playlist("Playlist 1".to_string()).unwrap();
         manager.create_playlist("Playlist 2".to_string()).unwrap();
-        
+
         let playlists = manager.list_playlists().unwrap();
         assert_eq!(playlists.len(), 2);
     }
@@ -407,10 +438,10 @@ mod tests {
     fn test_manager_add_track() {
         let manager = PlaylistManager::new();
         let id = manager.create_playlist("Test".to_string()).unwrap();
-        
+
         let track = Track::new("/song.mp3".to_string());
         manager.add_track_to_playlist(&id, track).unwrap();
-        
+
         let playlist = manager.get_playlist(&id).unwrap();
         assert_eq!(playlist.tracks.len(), 1);
     }
@@ -419,17 +450,17 @@ mod tests {
     fn test_manager_shuffle() {
         let manager = PlaylistManager::new();
         let id = manager.create_playlist("Test".to_string()).unwrap();
-        
+
         // Add multiple tracks
         for i in 0..10 {
             let track = Track::new(format!("/song{}.mp3", i));
             manager.add_track_to_playlist(&id, track).unwrap();
         }
-        
+
         let original = manager.get_playlist(&id).unwrap();
         manager.shuffle_playlist(&id).unwrap();
         let shuffled = manager.get_playlist(&id).unwrap();
-        
+
         // Tracks should be same count but likely different order
         assert_eq!(original.tracks.len(), shuffled.tracks.len());
     }

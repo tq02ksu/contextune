@@ -123,15 +123,13 @@ pub unsafe extern "C" fn playlist_create(
 
     let manager = manager_mutex.lock();
     match manager.create_playlist(name_str) {
-        Ok(id) => {
-            match CString::new(id) {
-                Ok(c_id) => {
-                    *playlist_id_out = c_id.into_raw();
-                    FFIResult::Success
-                }
-                Err(_) => FFIResult::InternalError,
+        Ok(id) => match CString::new(id) {
+            Ok(c_id) => {
+                *playlist_id_out = c_id.into_raw();
+                FFIResult::Success
             }
-        }
+            Err(_) => FFIResult::InternalError,
+        },
         Err(_) => FFIResult::InternalError,
     }
 }
@@ -241,15 +239,13 @@ pub unsafe extern "C" fn playlist_get_name(
 
     let manager = manager_mutex.lock();
     match manager.get_playlist(id_str) {
-        Ok(playlist) => {
-            match CString::new(playlist.name) {
-                Ok(c_name) => {
-                    *name_out = c_name.into_raw();
-                    FFIResult::Success
-                }
-                Err(_) => FFIResult::InternalError,
+        Ok(playlist) => match CString::new(playlist.name) {
+            Ok(c_name) => {
+                *name_out = c_name.into_raw();
+                FFIResult::Success
             }
-        }
+            Err(_) => FFIResult::InternalError,
+        },
         Err(_) => FFIResult::NotFound,
     }
 }
