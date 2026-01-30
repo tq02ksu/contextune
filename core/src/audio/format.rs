@@ -7,6 +7,12 @@ use serde::{Deserialize, Serialize};
 /// Audio sample format
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum SampleFormat {
+    /// 8-bit unsigned integer
+    U8,
+    /// 8-bit signed integer
+    I8,
+    /// 16-bit unsigned integer
+    U16,
     /// 16-bit signed integer
     I16,
     /// 24-bit signed integer (stored in i32)
@@ -23,6 +29,9 @@ impl SampleFormat {
     /// Get the size in bytes of this sample format
     pub fn size_bytes(&self) -> usize {
         match self {
+            SampleFormat::U8 => 1,
+            SampleFormat::I8 => 1,
+            SampleFormat::U16 => 2,
             SampleFormat::I16 => 2,
             SampleFormat::I24 => 3,
             SampleFormat::I32 => 4,
