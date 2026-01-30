@@ -183,7 +183,7 @@ contexture/
 │       ├── simple_playback.rs
 │       └── cue_playback.rs
 │
-├── plugin/                      # IntelliJ IDEA plugin
+├── intellij-plugin/                      # IntelliJ IDEA plugin
 │   ├── build.gradle.kts         # Gradle build configuration
 │   ├── settings.gradle.kts
 │   ├── gradle.properties
@@ -191,7 +191,7 @@ contexture/
 │   ├── src/
 │   │   ├── main/
 │   │   │   ├── kotlin/
-│   │   │   │   └── com/musicplayer/
+│   │   │   │   └── com/contexture/plugin/
 │   │   │   │       ├── MusicPlayerPlugin.kt      # Plugin entry point
 │   │   │   │       │
 │   │   │   │       ├── audio/                    # Audio integration
@@ -2283,7 +2283,7 @@ All CI/CD workflows are documented in:
 - `parking_lot` - Efficient synchronization primitives
 
 **IDE Integration**:
-- IntelliJ Platform SDK (Java/Kotlin)
+- IntelliJ Platform SDK (Java)
 - JNI for Rust-Java communication
 
 **AI/ML**:

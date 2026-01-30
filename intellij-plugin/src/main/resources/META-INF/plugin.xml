@@ -1,0 +1,127 @@
+<idea-plugin>
+    <id>com.contexture.musicplayer</id>
+    <name>Contexture Music Player</name>
+    <vendor email="support@contexture.com" url="https://github.com/tq02ksu/contexture">Contexture</vendor>
+
+    <description><![CDATA[
+    An intelligent HiFi music player plugin for IntelliJ IDEA that combines high-quality audio playback
+    with AI-powered music discovery and contextual information.
+
+    Features:
+    - HiFi-grade audio playback with bit-perfect output
+    - Support for FLAC, WAV, MP3, AAC, ALAC, and more
+    - CUE sheet support for album collections
+    - Local music library management
+    - Playlist management
+    - Keyboard shortcuts for playback control
+    - Minimal IDE performance impact
+
+    The plugin uses a high-performance Rust audio core for professional-grade audio quality.
+    ]]></description>
+
+    <change-notes><![CDATA[
+    <h3>Version 0.1.0</h3>
+    <ul>
+        <li>Initial release</li>
+        <li>Basic playback controls (play, pause, stop, seek)</li>
+        <li>Volume control with mute/unmute</li>
+        <li>Support for multiple audio formats</li>
+        <li>Playlist management</li>
+    </ul>
+    ]]></change-notes>
+
+    <!-- Product and plugin compatibility requirements -->
+    <depends>com.intellij.modules.platform</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <!-- Tool Window -->
+        <toolWindow id="Contexture Music Player"
+                    secondary="true"
+                    icon="/icons/music_player.svg"
+                    anchor="right"
+                    factoryClass="com.contexture.plugin.ui.MusicPlayerToolWindowFactory"/>
+
+        <!-- Settings -->
+        <applicationConfigurable
+                parentId="tools"
+                instance="com.contexture.plugin.settings.MusicPlayerConfigurable"
+                id="com.contexture.plugin.settings.MusicPlayerConfigurable"
+                displayName="Contexture Music Player"/>
+
+        <!-- Application Services -->
+        <applicationService
+                serviceImplementation="com.contexture.plugin.services.PlaybackService"/>
+        <applicationService
+                serviceImplementation="com.contexture.plugin.services.PlaylistService"/>
+        <applicationService
+                serviceImplementation="com.contexture.plugin.services.LibraryService"/>
+        
+        <!-- Startup Activity -->
+        <postStartupActivity implementation="com.contexture.plugin.MusicPlayerPlugin"/>
+    </extensions>
+
+    <actions>
+        <!-- Main Menu Actions -->
+        <group id="Contexture.MusicPlayer.MainMenu"
+               text="Music Player"
+               description="Contexture Music Player actions"
+               popup="true">
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+
+            <action id="Contexture.MusicPlayer.PlayPause"
+                    class="com.contexture.plugin.actions.PlayPauseAction"
+                    text="Play/Pause"
+                    description="Toggle playback"
+                    icon="/icons/play_pause.svg">
+                <keyboard-shortcut keymap="$default" first-keystroke="ctrl alt P"/>
+            </action>
+
+            <action id="Contexture.MusicPlayer.Stop"
+                    class="com.contexture.plugin.actions.StopAction"
+                    text="Stop"
+                    description="Stop playback"
+                    icon="/icons/stop.svg">
+                <keyboard-shortcut keymap="$default" first-keystroke="ctrl alt S"/>
+            </action>
+
+            <action id="Contexture.MusicPlayer.Next"
+                    class="com.contexture.plugin.actions.NextTrackAction"
+                    text="Next Track"
+                    description="Play next track"
+                    icon="/icons/next.svg">
+                <keyboard-shortcut keymap="$default" first-keystroke="ctrl alt N"/>
+            </action>
+
+            <action id="Contexture.MusicPlayer.Previous"
+                    class="com.contexture.plugin.actions.PreviousTrackAction"
+                    text="Previous Track"
+                    description="Play previous track"
+                    icon="/icons/previous.svg">
+                <keyboard-shortcut keymap="$default" first-keystroke="ctrl alt B"/>
+            </action>
+
+            <separator/>
+
+            <action id="Contexture.MusicPlayer.VolumeUp"
+                    class="com.contexture.plugin.actions.VolumeUpAction"
+                    text="Volume Up"
+                    description="Increase volume">
+                <keyboard-shortcut keymap="$default" first-keystroke="ctrl alt UP"/>
+            </action>
+
+            <action id="Contexture.MusicPlayer.VolumeDown"
+                    class="com.contexture.plugin.actions.VolumeDownAction"
+                    text="Volume Down"
+                    description="Decrease volume">
+                <keyboard-shortcut keymap="$default" first-keystroke="ctrl alt DOWN"/>
+            </action>
+
+            <action id="Contexture.MusicPlayer.Mute"
+                    class="com.contexture.plugin.actions.MuteAction"
+                    text="Mute/Unmute"
+                    description="Toggle mute">
+                <keyboard-shortcut keymap="$default" first-keystroke="ctrl alt M"/>
+            </action>
+        </group>
+    </actions>
+</idea-plugin>

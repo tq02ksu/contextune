@@ -206,42 +206,42 @@
 ## Phase 3: IDE Plugin Integration
 
 ### 3.1 IntelliJ IDEA Plugin Project Setup
-- [ ] 3.1.1 Create IntelliJ plugin project structure
-- [ ] 3.1.2 Configure build.gradle.kts
-- [ ] 3.1.3 Set up plugin.xml manifest
-- [ ] 3.1.4 Configure plugin dependencies
-- [ ] 3.1.5 Set up development environment
+- [x] 3.1.1 Create IntelliJ plugin project structure
+- [x] 3.1.2 Configure build.gradle.kts
+- [x] 3.1.3 Set up plugin.xml manifest
+- [x] 3.1.4 Configure plugin dependencies
+- [x] 3.1.5 Set up development environment
 
 ### 3.2 JNI Bridge to Rust Core
-- [ ] 3.2.1 Create Kotlin JNI wrapper classes
-- [ ] 3.2.2 Implement native library loading
-- [ ] 3.2.3 Handle platform-specific library paths
-- [ ] 3.2.4 Implement error handling for FFI calls
-- [ ] 3.2.5 Write JNI bridge tests
+- [x] 3.2.1 Create Kotlin JNI wrapper classes
+- [x] 3.2.2 Implement native library loading
+- [x] 3.2.3 Handle platform-specific library paths
+- [x] 3.2.4 Implement error handling for FFI calls
+- [x] 3.2.5 Write JNI bridge tests
 
 ### 3.3 Basic UI with Playback Controls
-- [ ] 3.3.1 Design main player UI layout
-- [ ] 3.3.2 Implement play/pause/stop buttons
-- [ ] 3.3.3 Implement next/previous buttons
-- [ ] 3.3.4 Add volume slider
-- [ ] 3.3.5 Implement UI state updates
-- [ ] 3.3.6 Write UI component tests
+- [x] 3.3.1 Design main player UI layout
+- [x] 3.3.2 Implement play/pause/stop buttons
+- [x] 3.3.3 Implement next/previous buttons
+- [x] 3.3.4 Add volume slider
+- [x] 3.3.5 Implement UI state updates
+- [x] 3.3.6 Write UI component tests
 
 ### 3.4 Progress Bar and Track Information Display
-- [ ] 3.4.1 Implement progress bar component
-- [ ] 3.4.2 Display current position and duration
-- [ ] 3.4.3 Implement seek by clicking progress bar
-- [ ] 3.4.4 Display track metadata (title, artist, album)
-- [ ] 3.4.5 Add album art display
-- [ ] 3.4.6 Write UI update tests
+- [x] 3.4.1 Implement progress bar component
+- [x] 3.4.2 Display current position and duration
+- [x] 3.4.3 Implement seek by clicking progress bar
+- [x] 3.4.4 Display track metadata (title, artist, album)
+- [ ]* 3.4.5 Add album art display
+- [x] 3.4.6 Write UI update tests
 
 ### 3.5 Keyboard Shortcuts
-- [ ] 3.5.1 Define keyboard shortcut mappings
-- [ ] 3.5.2 Implement play/pause shortcut
-- [ ] 3.5.3 Implement next/previous shortcuts
-- [ ] 3.5.4 Implement volume control shortcuts
-- [ ] 3.5.5 Ensure no conflicts with IDE shortcuts
-- [ ] 3.5.6 Write keyboard shortcut tests
+- [x] 3.5.1 Define keyboard shortcut mappings
+- [x] 3.5.2 Implement play/pause shortcut
+- [x] 3.5.3 Implement next/previous shortcuts
+- [x] 3.5.4 Implement volume control shortcuts
+- [x] 3.5.5 Ensure no conflicts with IDE shortcuts
+- [x] 3.5.6 Write keyboard shortcut tests
 
 ### 3.6 Plugin Lifecycle Management
 - [ ] 3.6.1 Implement plugin initialization
