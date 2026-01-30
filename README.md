@@ -62,11 +62,11 @@ cargo bench
 
 ```
 contextune/
-├── core/           # Rust audio core library
+├── core/             # Rust audio core library
 ├── intellij-plugin/  # IntelliJ Platform plugin
-├── scripts/        # Build and utility scripts
-├── test_data/      # Test data and reference files
-└── docs/           # Documentation
+├── scripts/          # Build and utility scripts
+├── test_data/        # Test data and reference files
+└── docs/             # Documentation
 ```
 
 ## Development
