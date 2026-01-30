@@ -16,7 +16,7 @@ interface RustAudioEngineLib : Library {
         val INSTANCE: RustAudioEngineLib by lazy {
             // Ensure native library is loaded
             NativeLibraryLoader.loadNativeLibrary()
-            Native.load("music_player_core", RustAudioEngineLib::class.java) as RustAudioEngineLib
+            Native.load("contexture_core", RustAudioEngineLib::class.java) as RustAudioEngineLib
         }
     }
     
