@@ -68,7 +68,7 @@ jobs:
       
       - name: Upload security scan results
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: security-scan-results-${{ github.run_number }}
           path: |
@@ -99,7 +99,7 @@ jobs:
       
       - name: Upload security report
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: security-report-${{ github.run_number }}
           path: security-report.md
@@ -188,7 +188,7 @@ jobs:
       
       - name: Upload supply chain report
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: supply-chain-report-${{ github.run_number }}
           path: supply-chain-report.md

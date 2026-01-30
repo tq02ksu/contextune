@@ -122,7 +122,7 @@ jobs:
       
       - name: Upload Test Results
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: audio-quality-results
           path: |
@@ -164,7 +164,7 @@ jobs:
         continue-on-error: true
       
       - name: Upload Benchmark Results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: benchmark-results
           path: target/criterion/
@@ -232,7 +232,7 @@ jobs:
       
       - name: Upload AddressSanitizer Results
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: asan-results
           path: |
@@ -315,7 +315,7 @@ jobs:
       
       - name: Upload Test Results
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: plugin-test-results
           path: intellij-plugin/build/reports/
@@ -359,7 +359,7 @@ jobs:
         continue-on-error: true
       
       - name: Upload CUE Test Results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: cue-parser-results
           path: target/cue_test_results/
@@ -425,7 +425,7 @@ jobs:
         continue-on-error: true
       
       - name: Upload Coverage Reports
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: coverage-reports
           path: |
@@ -473,7 +473,7 @@ jobs:
       
       - name: Upload Security Audit Results
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: security-audit-results
           path: |
