@@ -2,7 +2,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     id("java")
-    id("org.jetbrains.kotlin.jvm") version "2.1.0"
+    id("org.jetbrains.kotlin.jvm") version "1.9.25"
     id("org.jetbrains.intellij.platform") version "2.2.1"
 }
 
@@ -24,7 +24,7 @@ dependencies {
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     
     intellijPlatform {
-        intellijIdeaCommunity("2025.2.5")
+        intellijIdeaCommunity("2024.3.1", useInstaller = false)
         bundledPlugins(listOf(/* Plugin Dependencies */))
     }
 }
@@ -45,8 +45,8 @@ tasks {
     }
 
     patchPluginXml {
-        sinceBuild.set("251")
-        untilBuild.set("253.*")
+        sinceBuild.set("243")
+        untilBuild.set("243.*")
     }
     
     runIde {
