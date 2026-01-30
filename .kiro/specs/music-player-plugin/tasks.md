@@ -148,11 +148,11 @@
 - [x] 2.3.5 Benchmark FLAC decoding performance
 
 ### 2.4 AAC/ALAC Decoding
-- [ ] 2.4.1 Integrate symphonia AAC decoder
-- [ ] 2.4.2 Integrate symphonia ALAC decoder
-- [ ] 2.4.3 Test M4A container support
-- [ ] 2.4.4 Verify audio quality
-- [ ] 2.4.5 Write format-specific tests
+- [x] 2.4.1 Integrate symphonia AAC decoder
+- [x] 2.4.2 Integrate symphonia ALAC decoder
+- [x] 2.4.3 Test M4A container support
+- [x] 2.4.4 Verify audio quality
+- [x] 2.4.5 Write format-specific tests
 
 ### 2.5 Gapless Playback
 - [ ] 2.5.1 Implement track transition without gaps
