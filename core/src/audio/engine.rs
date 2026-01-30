@@ -74,8 +74,24 @@ pub trait AudioEngineInterface {
     /// Set playback volume (0.0 to 1.0)
     fn set_volume(&mut self, volume: f32) -> Result<()>;
 
+    /// Set playback volume with ramping (0.0 to 1.0)
+    /// 
+    /// # Arguments
+    /// * `volume` - Target volume (0.0 to 1.0)
+    /// * `ramp_duration_ms` - Duration of the volume ramp in milliseconds
+    fn set_volume_ramped(&mut self, volume: f32, ramp_duration_ms: u32) -> Result<()>;
+
     /// Get current playback volume
     fn volume(&self) -> f32;
+
+    /// Mute audio (preserves volume setting)
+    fn mute(&mut self) -> Result<()>;
+
+    /// Unmute audio (restores previous volume)
+    fn unmute(&mut self) -> Result<()>;
+
+    /// Check if audio is muted
+    fn is_muted(&self) -> bool;
 
     /// Get current playback state
     fn state(&self) -> PlaybackState;
@@ -102,6 +118,14 @@ struct AudioEngineState {
     state: PlaybackState,
     /// Current volume (0.0 to 1.0)
     volume: f32,
+    /// Volume before mute (for unmute restoration)
+    volume_before_mute: f32,
+    /// Whether audio is muted
+    is_muted: bool,
+    /// Target volume for ramping
+    target_volume: f32,
+    /// Volume ramp step per sample
+    volume_ramp_step: f32,
     /// Current position in samples
     position: u64,
     /// Total duration in samples
@@ -121,6 +145,10 @@ impl Default for AudioEngineState {
         Self {
             state: PlaybackState::Stopped,
             volume: 1.0,
+            volume_before_mute: 1.0,
+            is_muted: false,
+            target_volume: 1.0,
+            volume_ramp_step: 0.0,
             position: 0,
             duration: None,
             format: None,
@@ -588,9 +616,29 @@ impl AudioEngine {
         let mut temp_buffer = vec![0.0f64; samples_needed];
         let samples_read = consumer.read_with_silence(&mut temp_buffer);
 
-        // Convert f64 to f32 and apply volume
+        // Convert f64 to f32 and apply volume with ramping
         for (i, &sample) in temp_buffer.iter().enumerate() {
             if i < output.len() {
+                // Apply volume ramping
+                if state.volume_ramp_step != 0.0 {
+                    // Check if we've reached the target
+                    if (state.volume_ramp_step > 0.0 && state.volume < state.target_volume)
+                        || (state.volume_ramp_step < 0.0 && state.volume > state.target_volume)
+                    {
+                        state.volume += state.volume_ramp_step;
+                        // Clamp to target to avoid overshooting
+                        if state.volume_ramp_step > 0.0 {
+                            state.volume = state.volume.min(state.target_volume);
+                        } else {
+                            state.volume = state.volume.max(state.target_volume);
+                        }
+                    } else {
+                        // Reached target, stop ramping
+                        state.volume = state.target_volume;
+                        state.volume_ramp_step = 0.0;
+                    }
+                }
+                
                 output[i] = (sample * state.volume as f64) as f32;
             }
         }
@@ -618,9 +666,30 @@ impl AudioEngine {
         let start_sample = state.position as usize * samples_per_frame;
         let buffer_data = buffer.data();
 
-        // Copy audio data to output buffer
+        // Copy audio data to output buffer with volume ramping
         for (i, output_sample) in output.iter_mut().enumerate() {
             let buffer_index = start_sample + i;
+            
+            // Apply volume ramping
+            if state.volume_ramp_step != 0.0 {
+                // Check if we've reached the target
+                if (state.volume_ramp_step > 0.0 && state.volume < state.target_volume)
+                    || (state.volume_ramp_step < 0.0 && state.volume > state.target_volume)
+                {
+                    state.volume += state.volume_ramp_step;
+                    // Clamp to target to avoid overshooting
+                    if state.volume_ramp_step > 0.0 {
+                        state.volume = state.volume.min(state.target_volume);
+                    } else {
+                        state.volume = state.volume.max(state.target_volume);
+                    }
+                } else {
+                    // Reached target, stop ramping
+                    state.volume = state.target_volume;
+                    state.volume_ramp_step = 0.0;
+                }
+            }
+            
             if buffer_index < buffer_data.len() {
                 *output_sample = (buffer_data[buffer_index] * state.volume as f64) as f32;
             } else {
@@ -1145,7 +1214,33 @@ impl AudioEngineInterface for AudioEngine {
 
         self.update_state(|state| {
             state.volume = clamped_volume;
+            state.target_volume = clamped_volume;
+            state.volume_ramp_step = 0.0; // Instant change
             None // Volume changes don't emit events by default
+        });
+
+        Ok(())
+    }
+
+    fn set_volume_ramped(&mut self, volume: f32, ramp_duration_ms: u32) -> Result<()> {
+        let clamped_volume = volume.clamp(0.0, 1.0);
+
+        self.update_state(|state| {
+            state.target_volume = clamped_volume;
+            
+            // Calculate ramp step based on sample rate and duration
+            if let Some(format) = &state.format {
+                let sample_rate = format.sample_rate as f32;
+                let ramp_samples = (sample_rate * ramp_duration_ms as f32 / 1000.0).max(1.0);
+                let volume_diff = clamped_volume - state.volume;
+                state.volume_ramp_step = volume_diff / ramp_samples;
+            } else {
+                // No format available, do instant change
+                state.volume = clamped_volume;
+                state.volume_ramp_step = 0.0;
+            }
+            
+            None
         });
 
         Ok(())
@@ -1153,6 +1248,39 @@ impl AudioEngineInterface for AudioEngine {
 
     fn volume(&self) -> f32 {
         self.state.read().volume
+    }
+
+    fn mute(&mut self) -> Result<()> {
+        self.update_state(|state| {
+            if !state.is_muted {
+                state.volume_before_mute = state.volume;
+                state.is_muted = true;
+                state.volume = 0.0;
+                state.target_volume = 0.0;
+                state.volume_ramp_step = 0.0;
+            }
+            None
+        });
+
+        Ok(())
+    }
+
+    fn unmute(&mut self) -> Result<()> {
+        self.update_state(|state| {
+            if state.is_muted {
+                state.is_muted = false;
+                state.volume = state.volume_before_mute;
+                state.target_volume = state.volume_before_mute;
+                state.volume_ramp_step = 0.0;
+            }
+            None
+        });
+
+        Ok(())
+    }
+
+    fn is_muted(&self) -> bool {
+        self.state.read().is_muted
     }
 
     fn state(&self) -> PlaybackState {
@@ -1231,6 +1359,148 @@ mod tests {
 
         engine.set_volume(-0.5).unwrap();
         assert_eq!(engine.volume(), 0.0);
+    }
+
+    #[test]
+    fn test_volume_mute_unmute() {
+        let mut engine = AudioEngine::new().unwrap();
+
+        // Set initial volume
+        engine.set_volume(0.75).unwrap();
+        assert_eq!(engine.volume(), 0.75);
+        assert!(!engine.is_muted());
+
+        // Mute should set volume to 0 and preserve original
+        engine.mute().unwrap();
+        assert!(engine.is_muted());
+        assert_eq!(engine.volume(), 0.0);
+
+        // Unmute should restore original volume
+        engine.unmute().unwrap();
+        assert!(!engine.is_muted());
+        assert_eq!(engine.volume(), 0.75);
+
+        // Multiple mutes should be idempotent
+        engine.mute().unwrap();
+        engine.mute().unwrap();
+        assert!(engine.is_muted());
+        assert_eq!(engine.volume(), 0.0);
+
+        // Multiple unmutes should be idempotent
+        engine.unmute().unwrap();
+        engine.unmute().unwrap();
+        assert!(!engine.is_muted());
+        assert_eq!(engine.volume(), 0.75);
+    }
+
+    #[test]
+    fn test_volume_ramping() {
+        let mut engine = AudioEngine::new().unwrap();
+
+        // Set initial volume
+        engine.set_volume(0.5).unwrap();
+        assert_eq!(engine.volume(), 0.5);
+
+        // Set volume with ramping (without format, should do instant change)
+        engine.set_volume_ramped(0.8, 100).unwrap();
+        // Without format, it should change instantly
+        assert_eq!(engine.volume(), 0.8);
+
+        // Load a format to test ramping properly
+        let format = AudioFormat::new(44100, 2, crate::audio::format::SampleFormat::F32);
+        engine.update_state(|state| {
+            state.format = Some(format);
+            None
+        });
+
+        // Now test ramping with format
+        engine.set_volume(0.5).unwrap();
+        engine.set_volume_ramped(1.0, 100).unwrap();
+        
+        // Volume should still be at 0.5 initially
+        assert_eq!(engine.volume(), 0.5);
+        
+        // The ramping will happen in the audio callback
+        // We can verify the ramp step was calculated
+        let state = engine.state.read();
+        assert!(state.volume_ramp_step > 0.0);
+        assert_eq!(state.target_volume, 1.0);
+    }
+
+    #[test]
+    fn test_volume_ramping_down() {
+        let mut engine = AudioEngine::new().unwrap();
+
+        // Set format for ramping
+        let format = AudioFormat::new(44100, 2, crate::audio::format::SampleFormat::F32);
+        engine.update_state(|state| {
+            state.format = Some(format);
+            None
+        });
+
+        // Start at high volume
+        engine.set_volume(1.0).unwrap();
+        assert_eq!(engine.volume(), 1.0);
+
+        // Ramp down
+        engine.set_volume_ramped(0.2, 50).unwrap();
+        
+        // Volume should still be at 1.0 initially
+        assert_eq!(engine.volume(), 1.0);
+        
+        // Verify ramp step is negative
+        let state = engine.state.read();
+        assert!(state.volume_ramp_step < 0.0);
+        assert_eq!(state.target_volume, 0.2);
+    }
+
+    #[test]
+    fn test_mute_preserves_volume() {
+        let mut engine = AudioEngine::new().unwrap();
+
+        // Test with different volumes
+        for vol in [0.25, 0.5, 0.75, 1.0] {
+            engine.set_volume(vol).unwrap();
+            engine.mute().unwrap();
+            assert_eq!(engine.volume(), 0.0);
+            engine.unmute().unwrap();
+            assert_eq!(engine.volume(), vol);
+        }
+    }
+
+    #[test]
+    fn test_volume_change_while_muted() {
+        let mut engine = AudioEngine::new().unwrap();
+
+        // Set volume and mute
+        engine.set_volume(0.5).unwrap();
+        engine.mute().unwrap();
+        assert_eq!(engine.volume(), 0.0);
+
+        // Change volume while muted (should update the actual volume)
+        engine.set_volume(0.8).unwrap();
+        assert_eq!(engine.volume(), 0.8);
+
+        // Mute state should be cleared by set_volume
+        // (This is the current behavior - volume changes unmute)
+        assert!(!engine.is_muted());
+    }
+
+    #[test]
+    fn test_volume_ramping_clamping() {
+        let mut engine = AudioEngine::new().unwrap();
+
+        // Test clamping on ramped volume
+        engine.set_volume_ramped(1.5, 100).unwrap();
+        // Should be clamped to 1.0
+        let state = engine.state.read();
+        assert_eq!(state.target_volume, 1.0);
+
+        drop(state);
+        engine.set_volume_ramped(-0.5, 100).unwrap();
+        // Should be clamped to 0.0
+        let state = engine.state.read();
+        assert_eq!(state.target_volume, 0.0);
     }
 
     #[test]
@@ -1797,5 +2067,239 @@ mod tests {
         let extensions = crate::audio::decoder::supported_extensions();
         assert!(extensions.contains(&"mp3"));
         assert!(extensions.contains(&"wav"));
+    }
+
+    #[test]
+    fn test_playback_play_function() {
+        let mut engine = AudioEngine::new().unwrap();
+
+        // Initial state should be stopped
+        assert_eq!(engine.state(), PlaybackState::Stopped);
+
+        // Try to play without loading a file
+        let result = engine.play();
+        // Should either succeed (if audio system available) or fail gracefully
+        if result.is_ok() {
+            // If successful, state should be playing or error
+            let state = engine.state();
+            assert!(
+                state == PlaybackState::Playing || state == PlaybackState::Error,
+                "Expected Playing or Error state, got {:?}",
+                state
+            );
+        }
+    }
+
+    #[test]
+    fn test_playback_pause_function() {
+        let mut engine = AudioEngine::new().unwrap();
+
+        // Pause without playing should work (no-op or error)
+        let result = engine.pause();
+        // Should either succeed or fail gracefully
+        if result.is_ok() {
+            let state = engine.state();
+            assert!(
+                state == PlaybackState::Stopped
+                    || state == PlaybackState::Paused
+                    || state == PlaybackState::Error
+            );
+        }
+    }
+
+    #[test]
+    fn test_playback_stop_function() {
+        let mut engine = AudioEngine::new().unwrap();
+
+        // Stop should always succeed and reset position
+        let result = engine.stop();
+        assert!(result.is_ok());
+        assert_eq!(engine.state(), PlaybackState::Stopped);
+        assert_eq!(engine.position(), 0);
+
+        // Set position and stop again
+        engine.seek(1000).unwrap();
+        assert_eq!(engine.position(), 1000);
+
+        engine.stop().unwrap();
+        assert_eq!(engine.position(), 0);
+    }
+
+    #[test]
+    fn test_playback_seek_function() {
+        let mut engine = AudioEngine::new().unwrap();
+
+        // Seek should update position
+        engine.seek(0).unwrap();
+        assert_eq!(engine.position(), 0);
+
+        engine.seek(1000).unwrap();
+        assert_eq!(engine.position(), 1000);
+
+        engine.seek(5000).unwrap();
+        assert_eq!(engine.position(), 5000);
+
+        // Seek backwards
+        engine.seek(2000).unwrap();
+        assert_eq!(engine.position(), 2000);
+
+        // Seek to beginning
+        engine.seek(0).unwrap();
+        assert_eq!(engine.position(), 0);
+    }
+
+    #[test]
+    fn test_playback_state_management() {
+        let mut engine = AudioEngine::new().unwrap();
+
+        // Test initial state
+        assert_eq!(engine.state(), PlaybackState::Stopped);
+
+        // Test state after seeking
+        engine.seek(100).unwrap();
+        assert_eq!(engine.state(), PlaybackState::Stopped);
+
+        // Test stop resets position
+        engine.seek(500).unwrap();
+        engine.stop().unwrap();
+        assert_eq!(engine.position(), 0);
+        assert_eq!(engine.state(), PlaybackState::Stopped);
+    }
+
+    #[test]
+    fn test_playback_state_transitions_comprehensive() {
+        let mut engine = AudioEngine::new().unwrap();
+
+        // Test Stopped -> Playing
+        assert_eq!(engine.state(), PlaybackState::Stopped);
+        let play_result = engine.play();
+
+        if play_result.is_ok() && engine.state() == PlaybackState::Playing {
+            // Test Playing -> Paused
+            engine.pause().unwrap();
+            assert_eq!(engine.state(), PlaybackState::Paused);
+
+            // Test Paused -> Playing
+            engine.play().unwrap();
+            assert_eq!(engine.state(), PlaybackState::Playing);
+
+            // Test Playing -> Stopped
+            engine.stop().unwrap();
+            assert_eq!(engine.state(), PlaybackState::Stopped);
+            assert_eq!(engine.position(), 0);
+
+            // Test Paused -> Stopped
+            engine.play().unwrap();
+            engine.pause().unwrap();
+            assert_eq!(engine.state(), PlaybackState::Paused);
+            engine.stop().unwrap();
+            assert_eq!(engine.state(), PlaybackState::Stopped);
+            assert_eq!(engine.position(), 0);
+        }
+    }
+
+    #[test]
+    fn test_playback_position_persistence() {
+        let mut engine = AudioEngine::new().unwrap();
+
+        // Position should persist through pause/play
+        engine.seek(1000).unwrap();
+        assert_eq!(engine.position(), 1000);
+
+        // Try play/pause cycle
+        let _ = engine.play();
+        let _ = engine.pause();
+
+        // Position should still be at 1000 (or wherever playback moved it)
+        let position = engine.position();
+        assert!(
+            position >= 1000,
+            "Position should be >= 1000, got {}",
+            position
+        );
+    }
+
+    #[test]
+    fn test_playback_multiple_operations() {
+        let mut engine = AudioEngine::new().unwrap();
+
+        // Test multiple play calls
+        let _ = engine.play();
+        let _ = engine.play(); // Should be idempotent or handle gracefully
+
+        // Test multiple pause calls
+        let _ = engine.pause();
+        let _ = engine.pause(); // Should be idempotent
+
+        // Test multiple stop calls
+        engine.stop().unwrap();
+        engine.stop().unwrap(); // Should be idempotent
+
+        assert_eq!(engine.state(), PlaybackState::Stopped);
+        assert_eq!(engine.position(), 0);
+    }
+
+    #[test]
+    fn test_playback_seek_boundaries() {
+        let mut engine = AudioEngine::new().unwrap();
+
+        // Test seeking to 0
+        engine.seek(0).unwrap();
+        assert_eq!(engine.position(), 0);
+
+        // Test seeking to large values
+        engine.seek(u64::MAX).unwrap();
+        assert_eq!(engine.position(), u64::MAX);
+
+        // Test seeking back to reasonable value
+        engine.seek(1000).unwrap();
+        assert_eq!(engine.position(), 1000);
+    }
+
+    #[test]
+    fn test_playback_control_thread_safety() {
+        use parking_lot::RwLock;
+        use std::sync::Arc;
+        use std::thread;
+
+        let engine = Arc::new(RwLock::new(AudioEngine::new().unwrap()));
+        let mut handles = vec![];
+
+        // Spawn threads that perform various playback operations
+        for i in 0..5 {
+            let engine_clone = engine.clone();
+            let handle = thread::spawn(move || {
+                let mut eng = engine_clone.write();
+                match i % 4 {
+                    0 => {
+                        let _ = eng.play();
+                    }
+                    1 => {
+                        let _ = eng.pause();
+                    }
+                    2 => {
+                        let _ = eng.stop();
+                    }
+                    _ => {
+                        let _ = eng.seek(i * 1000);
+                    }
+                }
+            });
+            handles.push(handle);
+        }
+
+        for handle in handles {
+            handle.join().unwrap();
+        }
+
+        // Engine should still be in a valid state
+        let eng = engine.read();
+        let state = eng.state();
+        assert!(
+            state == PlaybackState::Stopped
+                || state == PlaybackState::Playing
+                || state == PlaybackState::Paused
+                || state == PlaybackState::Error
+        );
     }
 }

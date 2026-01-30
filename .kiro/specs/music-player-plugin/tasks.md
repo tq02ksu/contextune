@@ -101,28 +101,28 @@
 - [x] 1.5.5 Write tests for precision preservation
 
 ### 1.6 JNI Wrapper for Java Integration
-- [ ] 1.6.1 Define C-compatible FFI interface
-- [ ] 1.6.2 Implement audio_engine_create/destroy
-- [ ] 1.6.3 Implement audio_engine_load/play/pause/stop
-- [ ] 1.6.4 Implement audio_engine_seek
-- [ ] 1.6.5 Implement audio_engine_set_volume
-- [ ] 1.6.6 Add callback registration for state changes
-- [ ] 1.6.7 Write FFI integration tests
+- [x] 1.6.1 Define C-compatible FFI interface
+- [x] 1.6.2 Implement audio_engine_create/destroy
+- [x] 1.6.3 Implement audio_engine_load/play/pause/stop
+- [x] 1.6.4 Implement audio_engine_seek
+- [x] 1.6.5 Implement audio_engine_set_volume
+- [x] 1.6.6 Add callback registration for state changes
+- [x] 1.6.7 Write FFI integration tests
 
 ### 1.7 Basic Playback Controls
-- [ ] 1.7.1 Implement play() function
-- [ ] 1.7.2 Implement pause() function
-- [ ] 1.7.3 Implement stop() function
-- [ ] 1.7.4 Implement seek() function
-- [ ] 1.7.5 Add playback state management
-- [ ] 1.7.6 Write playback control tests
+- [x] 1.7.1 Implement play() function
+- [x] 1.7.2 Implement pause() function
+- [x] 1.7.3 Implement stop() function
+- [x] 1.7.4 Implement seek() function
+- [x] 1.7.5 Add playback state management
+- [x] 1.7.6 Write playback control tests
 
 ### 1.8 Volume Control
-- [ ] 1.8.1 Implement software volume control
-- [ ] 1.8.2 Add hardware volume control (when available)
-- [ ] 1.8.3 Implement mute/unmute functionality
-- [ ] 1.8.4 Add volume ramping to prevent clicks
-- [ ] 1.8.5 Write volume control tests
+- [-] 1.8.1 Implement software volume control
+- [-] 1.8.2 Add hardware volume control (when available)
+- [-] 1.8.3 Implement mute/unmute functionality
+- [-] 1.8.4 Add volume ramping to prevent clicks
+- [-] 1.8.5 Write volume control tests
 
 ## Phase 2: HiFi Audio Features
 

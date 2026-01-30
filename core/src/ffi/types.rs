@@ -21,6 +21,64 @@ pub enum FFIResult {
     InternalError = -4,
 }
 
+/// FFI-safe audio event type
+#[repr(C)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FFIAudioEventType {
+    /// Playback state changed
+    StateChanged = 0,
+    /// Playback position changed
+    PositionChanged = 1,
+    /// Track ended
+    TrackEnded = 2,
+    /// Error occurred
+    Error = 3,
+    /// Buffer underrun occurred
+    BufferUnderrun = 4,
+}
+
+/// FFI-safe playback state
+#[repr(C)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FFIPlaybackState {
+    /// Engine is stopped
+    Stopped = 0,
+    /// Engine is playing audio
+    Playing = 1,
+    /// Engine is paused
+    Paused = 2,
+    /// Engine is buffering
+    Buffering = 3,
+    /// Engine encountered an error
+    Error = 4,
+}
+
+/// FFI-safe audio event
+#[repr(C)]
+#[derive(Debug, Clone, Copy)]
+pub struct FFIAudioEvent {
+    /// Event type
+    pub event_type: FFIAudioEventType,
+    /// State value (for StateChanged events)
+    pub state: FFIPlaybackState,
+    /// Position value (for PositionChanged events, in samples)
+    pub position: u64,
+    /// Error message pointer (for Error events, null-terminated C string)
+    /// Note: This pointer is only valid during the callback
+    pub error_message: *const c_char,
+}
+
+/// FFI-safe callback function type
+///
+/// # Safety
+/// The callback function must be thread-safe and must not call back into
+/// the audio engine from within the callback.
+///
+/// # Parameters
+/// - `event`: The audio event that occurred
+/// - `user_data`: User-provided data pointer passed during registration
+pub type FFIAudioCallback = unsafe extern "C" fn(event: FFIAudioEvent, user_data: *mut c_void);
+
 /// FFI-safe audio engine handle
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]

@@ -8,4 +8,7 @@ pub mod types;
 
 // Re-export commonly used types and functions
 pub use c_api::*;
-pub use types::{AudioEngineHandle, FFIResult};
+pub use types::{
+    AudioEngineHandle, FFIAudioCallback, FFIAudioEvent, FFIAudioEventType, FFIPlaybackState,
+    FFIResult,
+};
