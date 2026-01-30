@@ -13,11 +13,42 @@ import com.sun.jna.Structure
 interface RustAudioEngineLib : Library {
     
     companion object {
-        val INSTANCE: RustAudioEngineLib by lazy {
-            // Ensure native library is loaded
-            NativeLibraryLoader.loadNativeLibrary()
-            Native.load("contextune_core", RustAudioEngineLib::class.java) as RustAudioEngineLib
+        private var _instance: RustAudioEngineLib? = null
+        private var _loadAttempted = false
+        private var _loadException: Exception? = null
+        
+        /**
+         * Get the library instance, or null if loading failed
+         */
+        fun getInstance(): RustAudioEngineLib? {
+            if (!_loadAttempted) {
+                synchronized(this) {
+                    if (!_loadAttempted) {
+                        try {
+                            // Ensure native library is loaded
+                            NativeLibraryLoader.loadNativeLibrary()
+                            _instance = Native.load("contextune_core", RustAudioEngineLib::class.java) as RustAudioEngineLib
+                        } catch (e: Exception) {
+                            _loadException = e
+                            _instance = null
+                        } finally {
+                            _loadAttempted = true
+                        }
+                    }
+                }
+            }
+            return _instance
         }
+        
+        /**
+         * Get the exception that occurred during loading, if any
+         */
+        fun getLoadException(): Exception? = _loadException
+        
+        /**
+         * Check if the library was loaded successfully
+         */
+        fun isLoaded(): Boolean = _instance != null
     }
     
     // Core engine functions
@@ -162,8 +193,20 @@ class AudioEngineException(message: String, val errorCode: Int) : Exception(mess
 class AudioEngine {
     
     private var handle: AudioEngineHandle? = null
-    private val lib = RustAudioEngineLib.INSTANCE
+    private val lib: RustAudioEngineLib
     private var callback: AudioCallback? = null
+    
+    init {
+        val instance = RustAudioEngineLib.getInstance()
+        if (instance == null) {
+            val exception = RustAudioEngineLib.getLoadException()
+            throw AudioEngineException(
+                "Failed to load native audio library: ${exception?.message ?: "Unknown error"}", 
+                FFIResult.INTERNAL_ERROR
+            )
+        }
+        lib = instance
+    }
     
     /**
      * Initialize the audio engine

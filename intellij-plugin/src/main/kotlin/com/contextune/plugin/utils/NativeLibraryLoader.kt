@@ -19,38 +19,48 @@ object NativeLibraryLoader {
         if (isLoaded) {
             return
         }
-        
+
         val libraryName = getNativeLibraryName()
-        
+        val errorMessages = mutableListOf<String>()
+
+        // Strategy 1: Try to load from plugin's lib directory
         try {
-            // Strategy 1: Try to load from plugin's lib directory
             val pluginLibPath = getPluginLibPath(libraryName)
             if (pluginLibPath != null && File(pluginLibPath).exists()) {
                 System.load(pluginLibPath)
                 isLoaded = true
                 println("Loaded native library from plugin lib: $pluginLibPath")
                 return
+            } else {
+                errorMessages.add("Plugin lib path not found or does not exist: $pluginLibPath")
             }
-            
-            // Strategy 2: Try to extract from resources and load
+        } catch (e: Exception) {
+            errorMessages.add("Failed to load from plugin lib: ${e.message}")
+        }
+
+        // Strategy 2: Try to extract from resources and load
+        try {
             val resourcePath = "/native/$libraryName"
             val inputStream = NativeLibraryLoader::class.java.getResourceAsStream(resourcePath)
-            
             if (inputStream != null) {
                 val tempFile = Files.createTempFile("contextune_core", getNativeLibraryExtension())
                 tempFile.toFile().deleteOnExit()
-                
                 FileOutputStream(tempFile.toFile()).use { output ->
                     inputStream.copyTo(output)
                 }
-                
                 System.load(tempFile.toAbsolutePath().toString())
                 isLoaded = true
                 println("Loaded native library from resources: $resourcePath")
                 return
+            } else {
+                errorMessages.add("Resource not found: $resourcePath")
             }
-            
-            // Strategy 3: Try relative path (for development)
+        } catch (e: Exception) {
+            errorMessages.add("Failed to load from resources: ${e.message}")
+        }
+
+        // Strategy 3: Try relative path (for development)
+        try {
             val relativePath = getNativeLibraryPath(libraryName)
             val relativeFile = File(relativePath)
             if (relativeFile.exists()) {
@@ -58,13 +68,14 @@ object NativeLibraryLoader {
                 isLoaded = true
                 println("Loaded native library from relative path: ${relativeFile.absolutePath}")
                 return
+            } else {
+                errorMessages.add("Relative path not found or does not exist: $relativePath")
             }
-            
-            throw RuntimeException("Native library not found: $libraryName. Tried plugin lib, resources, and relative path.")
-            
         } catch (e: Exception) {
-            throw RuntimeException("Failed to load native library: $libraryName", e)
+            errorMessages.add("Failed to load from relative path: ${e.message}")
         }
+
+        throw RuntimeException("Native library not found: $libraryName. Tried plugin lib, resources, and relative path.\nDetails:\n" + errorMessages.joinToString("\n"))
     }
     
     /**

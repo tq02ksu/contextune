@@ -17,7 +17,8 @@ repositories {
 }
 
 dependencies {
-    implementation("net.java.dev.jna:jna:5.13.0")
+    compileOnly("net.java.dev.jna:jna:5.13.0")
+    compileOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.1")
     testImplementation("org.jetbrains.kotlin:kotlin-test")
     testImplementation("org.junit.jupiter:junit-jupiter:5.10.1")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
@@ -34,6 +35,8 @@ kotlin {
 
 intellijPlatform {
     buildSearchableOptions = false
+    
+    instrumentCode = false
 }
 
 tasks {
@@ -44,6 +47,15 @@ tasks {
     patchPluginXml {
         sinceBuild.set("251")
         untilBuild.set("253.*")
+    }
+    
+    runIde {
+        jvmArgs = listOf(
+            "-Xmx2048m",
+            "-XX:+UseG1GC"
+        )
+        // Disable coroutines debug agent
+        systemProperty("kotlinx.coroutines.debug", "off")
     }
 
     signPlugin {

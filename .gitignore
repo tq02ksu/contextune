@@ -131,6 +131,9 @@ cmake-build-*/
 # IntelliJ
 out/
 
+# IntelliJ Platform Plugin Development
+.intellijPlatform/
+
 # mpeltonen/sbt-idea plugin
 .idea_modules/
 
