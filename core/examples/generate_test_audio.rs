@@ -27,9 +27,9 @@ fn generate_sine_wave(frequency: f64, duration: f64, sample_rate: u32, amplitude
 fn generate_white_noise(duration: f64, sample_rate: u32, amplitude: f64) -> Vec<f64> {
     use rand::Rng;
     let num_samples = (sample_rate as f64 * duration) as usize;
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     (0..num_samples)
-        .map(|_| amplitude * rng.gen_range(-1.0..1.0))
+        .map(|_| amplitude * rng.random_range(-1.0..1.0))
         .collect()
 }
 

@@ -35,7 +35,7 @@ serde.workspace = true
 serde_json.workspace = true
 uuid = { version = "1.6", features = ["v4", "serde"] }
 chrono = { version = "0.4", features = ["serde"] }
-rand = "0.8"
+rand = "0.9"
 
 # Error handling
 anyhow.workspace = true
@@ -55,7 +55,7 @@ proptest.workspace = true
 criterion.workspace = true
 tempfile.workspace = true
 hound = "3.5"
-rand = "0.8"
+rand = "0.9"
 rustfft = "6.2"
 
 [[bench]]

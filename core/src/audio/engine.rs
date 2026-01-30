@@ -389,14 +389,12 @@ impl AudioEngine {
 
             if score > best_score {
                 // Check if sample rate is supported
-                if config.min_sample_rate().0 <= target_format.sample_rate
-                    && target_format.sample_rate <= config.max_sample_rate().0
+                if config.min_sample_rate() <= target_format.sample_rate
+                    && target_format.sample_rate <= config.max_sample_rate()
                 {
                     // Check if channel count is supported
                     if config.channels() == target_format.channels {
-                        best_match = Some(
-                            config.with_sample_rate(cpal::SampleRate(target_format.sample_rate)),
-                        );
+                        best_match = Some(config.with_sample_rate(target_format.sample_rate));
                         best_score = score;
                     }
                 }
@@ -420,14 +418,14 @@ impl AudioEngine {
         let mut score = 0;
 
         // Prefer exact sample rate match
-        if config.min_sample_rate().0 <= target_format.sample_rate
-            && target_format.sample_rate <= config.max_sample_rate().0
+        if config.min_sample_rate() <= target_format.sample_rate
+            && target_format.sample_rate <= config.max_sample_rate()
         {
             score += 100;
 
             // Bonus for exact sample rate match at boundaries
-            if config.min_sample_rate().0 == target_format.sample_rate
-                || config.max_sample_rate().0 == target_format.sample_rate
+            if config.min_sample_rate() == target_format.sample_rate
+                || config.max_sample_rate() == target_format.sample_rate
             {
                 score += 50;
             }
@@ -440,10 +438,10 @@ impl AudioEngine {
 
         // Prefer higher sample rates for high-resolution audio
         if target_format.is_high_resolution() {
-            if config.max_sample_rate().0 >= 96000 {
+            if config.max_sample_rate() >= 96000 {
                 score += 25;
             }
-            if config.max_sample_rate().0 >= 192000 {
+            if config.max_sample_rate() >= 192000 {
                 score += 25;
             }
         }
@@ -451,7 +449,7 @@ impl AudioEngine {
         // Prefer configurations that support common sample rates
         let common_rates = [44100, 48000, 96000, 192000];
         for &rate in &common_rates {
-            if config.min_sample_rate().0 <= rate && rate <= config.max_sample_rate().0 {
+            if config.min_sample_rate() <= rate && rate <= config.max_sample_rate() {
                 score += 10;
             }
         }
@@ -473,8 +471,8 @@ impl AudioEngine {
         // Try to find exact match first
         let supported_configs_vec: Vec<_> = supported_configs.collect();
         for config in &supported_configs_vec {
-            if config.min_sample_rate().0 <= preferred_format.sample_rate
-                && preferred_format.sample_rate <= config.max_sample_rate().0
+            if config.min_sample_rate() <= preferred_format.sample_rate
+                && preferred_format.sample_rate <= config.max_sample_rate()
                 && config.channels() == preferred_format.channels
             {
                 return Ok(preferred_format.clone());
@@ -488,7 +486,7 @@ impl AudioEngine {
         let best_config = self.find_compatible_config(supported_configs_iter, preferred_format)?;
 
         Ok(AudioFormat::new(
-            best_config.sample_rate().0,
+            best_config.sample_rate(),
             best_config.channels(),
             crate::audio::format::SampleFormat::F32, // CPAL uses f32
         ))
@@ -510,7 +508,7 @@ impl AudioEngine {
         let mut best_channels = 0;
 
         for config in supported_configs {
-            let sample_rate = config.max_sample_rate().0;
+            let sample_rate = config.max_sample_rate();
             let channels = config.channels();
 
             // Prefer higher sample rates and more channels for quality
@@ -544,8 +542,8 @@ impl AudioEngine {
         })?;
 
         for config in supported_configs {
-            if config.min_sample_rate().0 <= format.sample_rate
-                && format.sample_rate <= config.max_sample_rate().0
+            if config.min_sample_rate() <= format.sample_rate
+                && format.sample_rate <= config.max_sample_rate()
                 && config.channels() == format.channels
             {
                 return Ok(true);
@@ -843,17 +841,17 @@ impl AudioEngine {
         for config in supported_configs {
             // Add configurations for common sample rates
             let sample_rates = [
-                config.min_sample_rate().0,
+                config.min_sample_rate(),
                 44100,
                 48000,
                 96000,
                 192000,
-                config.max_sample_rate().0,
+                config.max_sample_rate(),
             ];
 
             for &sample_rate in &sample_rates {
-                if sample_rate >= config.min_sample_rate().0
-                    && sample_rate <= config.max_sample_rate().0
+                if sample_rate >= config.min_sample_rate()
+                    && sample_rate <= config.max_sample_rate()
                 {
                     let audio_format = AudioFormat::new(
                         sample_rate,
@@ -881,7 +879,8 @@ impl AudioEngine {
 
         for device in devices {
             let name = device
-                .name()
+                .description()
+                .map(|desc| desc.to_string())
                 .unwrap_or_else(|_| "Unknown Device".to_string());
 
             let supported_configs = device.supported_output_configs().map_err(|e| {
@@ -892,7 +891,7 @@ impl AudioEngine {
             for config in supported_configs {
                 // Add a representative format for this config
                 let format = AudioFormat::new(
-                    config.max_sample_rate().0.min(48000), // Use 48kHz as default, or max if lower
+                    config.max_sample_rate().min(48000), // Use 48kHz as default, or max if lower
                     config.channels(),
                     crate::audio::format::SampleFormat::F32,
                 );
@@ -910,7 +909,7 @@ impl AudioEngine {
 
         // Mark the default device
         if let Some(default_device) = self.host.default_output_device() {
-            if let Ok(default_name) = default_device.name() {
+            if let Ok(default_name) = default_device.description().map(|desc| desc.to_string()) {
                 for device_info in &mut device_infos {
                     if device_info.name == default_name {
                         device_info.is_default = true;
@@ -931,7 +930,8 @@ impl AudioEngine {
         };
 
         let name = device
-            .name()
+            .description()
+            .map(|desc| desc.to_string())
             .unwrap_or_else(|_| "Unknown Device".to_string());
 
         let supported_configs = device.supported_output_configs().map_err(|e| {
@@ -941,7 +941,7 @@ impl AudioEngine {
         let mut formats = Vec::new();
         for config in supported_configs {
             let format = AudioFormat::new(
-                config.max_sample_rate().0.min(48000),
+                config.max_sample_rate().min(48000),
                 config.channels(),
                 crate::audio::format::SampleFormat::F32,
             );
@@ -949,7 +949,11 @@ impl AudioEngine {
         }
 
         let is_default = if let Some(default_device) = self.host.default_output_device() {
-            default_device.name().unwrap_or_default() == name
+            default_device
+                .description()
+                .map(|desc| desc.to_string())
+                .unwrap_or_default()
+                == name
         } else {
             false
         };
@@ -968,7 +972,7 @@ impl AudioEngine {
         })?;
 
         for device in devices {
-            if let Ok(name) = device.name() {
+            if let Ok(name) = device.description().map(|desc| desc.to_string()) {
                 if name == device_name {
                     return self.set_device(device);
                 }

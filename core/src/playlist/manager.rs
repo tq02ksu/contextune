@@ -314,7 +314,6 @@ impl PlaylistManager {
     /// Shuffle tracks in a playlist using Fisher-Yates algorithm
     pub fn shuffle_playlist(&self, playlist_id: &str) -> Result<()> {
         use rand::seq::SliceRandom;
-        use rand::thread_rng;
 
         let mut playlists = self
             .playlists
@@ -325,7 +324,7 @@ impl PlaylistManager {
             .get_mut(playlist_id)
             .ok_or_else(|| Error::Playlist(format!("Playlist not found: {}", playlist_id)))?;
 
-        let mut rng = thread_rng();
+        let mut rng = rand::rng();
         playlist.tracks.shuffle(&mut rng);
         playlist.modified_at = chrono::Utc::now().timestamp();
 

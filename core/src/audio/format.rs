@@ -99,7 +99,7 @@ impl AudioFormat {
     pub fn to_cpal_config(&self) -> cpal::StreamConfig {
         cpal::StreamConfig {
             channels: self.channels,
-            sample_rate: cpal::SampleRate(self.sample_rate),
+            sample_rate: self.sample_rate,
             buffer_size: cpal::BufferSize::Default,
         }
     }
@@ -107,7 +107,7 @@ impl AudioFormat {
     /// Create from CPAL stream config
     pub fn from_cpal_config(config: &cpal::StreamConfig, sample_format: SampleFormat) -> Self {
         Self {
-            sample_rate: config.sample_rate.0,
+            sample_rate: config.sample_rate,
             channels: config.channels,
             sample_format,
             channel_layout: ChannelLayout::from_channel_count(config.channels),
@@ -356,7 +356,7 @@ mod tests {
         let cpal_config = format.to_cpal_config();
 
         assert_eq!(cpal_config.channels, 2);
-        assert_eq!(cpal_config.sample_rate.0, 44100);
+        assert_eq!(cpal_config.sample_rate, 44100);
 
         let converted_back = AudioFormat::from_cpal_config(&cpal_config, SampleFormat::F32);
         assert_eq!(converted_back.sample_rate, format.sample_rate);
