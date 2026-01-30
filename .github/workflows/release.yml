@@ -63,7 +63,6 @@ jobs:
           name: rust-core-${{ matrix.target }}
           path: target/${{ matrix.target }}/release/${{ matrix.artifact_name }}
 
-
   build-plugin:
     name: Build IntelliJ Plugin
     runs-on: ubuntu-latest
@@ -82,11 +81,11 @@ jobs:
       - name: Download Rust Artifacts
         uses: actions/download-artifact@v3
         with:
-          path: plugin/libs/
+          path: intellij-plugin/libs/
       
       - name: Build Plugin
         run: |
-          cd plugin
+          cd intellij-plugin
           ./gradlew buildPlugin
         continue-on-error: true
       
@@ -94,7 +93,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: intellij-plugin
-          path: plugin/build/distributions/*.zip
+          path: intellij-plugin/build/distributions/*.zip
           if-no-files-found: ignore
 
   create-release:
