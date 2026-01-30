@@ -1,6 +1,17 @@
 # Contextune Music Player - IntelliJ Platform Plugin
 
+<!-- Plugin description -->
 An intelligent HiFi music player plugin for IntelliJ Platform IDEs (IntelliJ IDEA, PyCharm, WebStorm, etc.) that combines high-quality audio playback with AI-powered music discovery and contextual information.
+
+Features:
+- HiFi-Grade Audio Playback with bit-perfect audio output
+- Multiple Format Support (FLAC, WAV, MP3, AAC, ALAC, OGG)
+- CUE Sheet Support for album playback
+- Local Music Library management
+- Playlist Management
+- Keyboard Shortcuts for seamless coding workflow
+- Minimal IDE Impact with efficient resource usage
+<!-- Plugin description end -->
 
 ## Features
 
