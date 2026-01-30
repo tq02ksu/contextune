@@ -5,6 +5,101 @@
 use crate::audio::format::{AudioFormat, SampleFormat};
 use crate::Result;
 
+/// Dithering algorithm for bit depth reduction
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DitheringAlgorithm {
+    /// No dithering (truncation)
+    None,
+    /// Triangular Probability Density Function (TPDF) dithering
+    /// Recommended for most use cases - adds minimal noise while eliminating quantization artifacts
+    Triangular,
+    /// Rectangular dithering (simple random noise)
+    Rectangular,
+}
+
+/// Dithering state for generating dither noise
+pub struct Ditherer {
+    /// Dithering algorithm to use
+    algorithm: DitheringAlgorithm,
+    /// Random number generator state
+    rng_state: u64,
+}
+
+impl Ditherer {
+    /// Create a new ditherer with the specified algorithm
+    pub fn new(algorithm: DitheringAlgorithm) -> Self {
+        Self {
+            algorithm,
+            rng_state: 0x123456789ABCDEF0, // Initial seed
+        }
+    }
+
+    /// Generate a random number using a simple LCG (Linear Congruential Generator)
+    /// This is fast and sufficient for dithering purposes
+    fn random(&mut self) -> f64 {
+        // LCG parameters (from Numerical Recipes)
+        const A: u64 = 1664525;
+        const C: u64 = 1013904223;
+        
+        self.rng_state = self.rng_state.wrapping_mul(A).wrapping_add(C);
+        
+        // Convert to float in range [0, 1)
+        (self.rng_state as f64) / (u64::MAX as f64)
+    }
+
+    /// Generate dither noise for a single sample
+    fn generate_dither(&mut self) -> f64 {
+        match self.algorithm {
+            DitheringAlgorithm::None => 0.0,
+            DitheringAlgorithm::Rectangular => {
+                // Rectangular dithering: uniform random noise in [-0.5, 0.5]
+                self.random() - 0.5
+            }
+            DitheringAlgorithm::Triangular => {
+                // Triangular dithering (TPDF): sum of two uniform random numbers
+                // This creates a triangular probability distribution
+                // Range: [-1.0, 1.0] with peak at 0
+                (self.random() - 0.5) + (self.random() - 0.5)
+            }
+        }
+    }
+
+    /// Apply dithering to samples before quantization
+    /// 
+    /// # Arguments
+    /// * `samples` - Input samples in f64 format (normalized to [-1.0, 1.0])
+    /// * `target_bits` - Target bit depth (e.g., 16 for 16-bit audio)
+    /// 
+    /// # Returns
+    /// Dithered samples ready for quantization
+    pub fn apply(&mut self, samples: &[f64], target_bits: u32) -> Vec<f64> {
+        if self.algorithm == DitheringAlgorithm::None {
+            return samples.to_vec();
+        }
+
+        // Calculate the LSB (Least Significant Bit) value for the target bit depth
+        let lsb = 1.0 / (1_i64 << (target_bits - 1)) as f64;
+
+        samples
+            .iter()
+            .map(|&sample| {
+                let dither = self.generate_dither() * lsb;
+                sample + dither
+            })
+            .collect()
+    }
+
+    /// Get the current dithering algorithm
+    pub fn algorithm(&self) -> DitheringAlgorithm {
+        self.algorithm
+    }
+
+    /// Set the dithering algorithm
+    pub fn set_algorithm(&mut self, algorithm: DitheringAlgorithm) {
+        self.algorithm = algorithm;
+    }
+}
+
 /// Convert samples from various formats to f64 normalized range [-1.0, 1.0]
 pub trait SampleConverter {
     /// Convert to f64 samples
@@ -187,6 +282,97 @@ pub struct AudioProcessor {
     target_volume: f64,
     /// Volume ramp step per sample
     ramp_step: f64,
+}
+
+/// Sample rate converter for high-quality resampling
+/// Only used when hardware doesn't support native sample rate
+pub struct SampleRateConverter {
+    /// Source sample rate
+    source_rate: u32,
+    /// Target sample rate
+    target_rate: u32,
+    /// Conversion ratio
+    ratio: f64,
+}
+
+impl SampleRateConverter {
+    /// Create a new sample rate converter
+    ///
+    /// # Arguments
+    /// * `source_rate` - Input sample rate in Hz
+    /// * `target_rate` - Output sample rate in Hz
+    pub fn new(source_rate: u32, target_rate: u32) -> Self {
+        let ratio = target_rate as f64 / source_rate as f64;
+        Self {
+            source_rate,
+            target_rate,
+            ratio,
+        }
+    }
+
+    /// Check if conversion is needed
+    pub fn is_passthrough(&self) -> bool {
+        self.source_rate == self.target_rate
+    }
+
+    /// Convert sample rate using linear interpolation
+    ///
+    /// This is a simple but effective method for sample rate conversion.
+    /// For production use, consider using a dedicated library like `rubato`
+    /// for higher quality resampling with sinc interpolation.
+    pub fn convert(&mut self, input: &[f64]) -> Vec<f64> {
+        if self.is_passthrough() {
+            return input.to_vec();
+        }
+
+        if input.is_empty() {
+            return Vec::new();
+        }
+
+        // Calculate exact output length
+        let output_len = ((input.len() - 1) as f64 * self.ratio).ceil() as usize + 1;
+        let mut output = Vec::with_capacity(output_len);
+
+        let step = 1.0 / self.ratio;
+        let mut pos = 0.0;
+
+        while pos < (input.len() - 1) as f64 {
+            let index = pos.floor() as usize;
+            let frac = pos - pos.floor();
+
+            // Linear interpolation between samples
+            let sample = if index + 1 < input.len() {
+                input[index] * (1.0 - frac) + input[index + 1] * frac
+            } else {
+                input[index]
+            };
+
+            output.push(sample);
+            pos += step;
+        }
+
+        // Add the last sample
+        if output.len() < output_len {
+            output.push(*input.last().unwrap());
+        }
+
+        output
+    }
+
+    /// Get the conversion ratio
+    pub fn ratio(&self) -> f64 {
+        self.ratio
+    }
+
+    /// Get source sample rate
+    pub fn source_rate(&self) -> u32 {
+        self.source_rate
+    }
+
+    /// Get target sample rate
+    pub fn target_rate(&self) -> u32 {
+        self.target_rate
+    }
 }
 
 impl AudioProcessor {
@@ -694,5 +880,129 @@ mod tests {
 
         // After 100ms, should be at target
         assert!((processor.volume() - 1.0).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_sample_rate_converter_passthrough() {
+        let converter = SampleRateConverter::new(44100, 44100);
+        assert!(converter.is_passthrough());
+        assert_eq!(converter.ratio(), 1.0);
+
+        let input = vec![0.0, 0.5, 1.0, 0.5, 0.0];
+        let mut converter = SampleRateConverter::new(44100, 44100);
+        let output = converter.convert(&input);
+
+        assert_eq!(output.len(), input.len());
+        assert_eq!(output, input);
+    }
+
+    #[test]
+    fn test_sample_rate_converter_upsample() {
+        let mut converter = SampleRateConverter::new(44100, 88200);
+        assert!(!converter.is_passthrough());
+        assert_eq!(converter.ratio(), 2.0);
+
+        let input = vec![0.0, 1.0, 0.0];
+        let output = converter.convert(&input);
+
+        // Upsampling 2x should produce approximately 2x samples
+        assert!(output.len() >= input.len() * 2 - 1);
+        assert!(output.len() <= input.len() * 2 + 1);
+    }
+
+    #[test]
+    fn test_sample_rate_converter_downsample() {
+        let mut converter = SampleRateConverter::new(88200, 44100);
+        assert!(!converter.is_passthrough());
+        assert_eq!(converter.ratio(), 0.5);
+
+        let input = vec![0.0, 0.25, 0.5, 0.75, 1.0, 0.75, 0.5, 0.25, 0.0];
+        let output = converter.convert(&input);
+
+        // Downsampling 2x should produce approximately half the samples
+        assert!(output.len() >= input.len() / 2 - 1);
+        assert!(output.len() <= input.len() / 2 + 1);
+    }
+
+    #[test]
+    fn test_sample_rate_converter_interpolation() {
+        let mut converter = SampleRateConverter::new(10, 20);
+
+        // Simple ramp: 0.0 to 1.0
+        let input = vec![0.0, 0.5, 1.0];
+        let output = converter.convert(&input);
+
+        // Check that interpolated values are between input samples
+        for &sample in &output {
+            assert!(sample >= 0.0 && sample <= 1.0);
+        }
+    }
+
+    #[test]
+    fn test_sample_rate_converter_common_rates() {
+        // Test common sample rate conversions
+        let test_cases = vec![
+            (44100, 48000),  // CD to DAT
+            (48000, 44100),  // DAT to CD
+            (44100, 96000),  // CD to Hi-Res
+            (96000, 44100),  // Hi-Res to CD
+            (44100, 192000), // CD to Ultra Hi-Res
+        ];
+
+        for (source, target) in test_cases {
+            let mut converter = SampleRateConverter::new(source, target);
+            let input = vec![0.0, 0.5, 1.0, 0.5, 0.0];
+            let output = converter.convert(&input);
+
+            let expected_ratio = target as f64 / source as f64;
+            let min_expected = ((input.len() - 1) as f64 * expected_ratio).floor() as usize;
+            let max_expected = ((input.len() - 1) as f64 * expected_ratio).ceil() as usize + 2;
+
+            assert!(
+                output.len() >= min_expected && output.len() <= max_expected,
+                "source: {}, target: {}, ratio: {:.2}, expected: {}-{}, got: {}",
+                source,
+                target,
+                expected_ratio,
+                min_expected,
+                max_expected,
+                output.len()
+            );
+        }
+    }
+
+    #[test]
+    fn test_sample_rate_converter_sine_wave() {
+        // Test with a sine wave to verify interpolation quality
+        let source_rate = 1000;
+        let target_rate = 2000;
+        let frequency = 10.0; // 10 Hz sine wave
+
+        // Generate 100 samples of sine wave at source rate
+        let input: Vec<f64> = (0..100)
+            .map(|i| {
+                let t = i as f64 / source_rate as f64;
+                (2.0 * std::f64::consts::PI * frequency * t).sin()
+            })
+            .collect();
+
+        let mut converter = SampleRateConverter::new(source_rate, target_rate);
+        let output = converter.convert(&input);
+
+        // Output should be approximately 2x the input length
+        assert!(output.len() >= 190 && output.len() <= 210);
+
+        // All samples should be in valid range [-1, 1]
+        for &sample in &output {
+            assert!(sample >= -1.1 && sample <= 1.1);
+        }
+    }
+
+    #[test]
+    fn test_sample_rate_converter_properties() {
+        let converter = SampleRateConverter::new(44100, 48000);
+        assert_eq!(converter.source_rate(), 44100);
+        assert_eq!(converter.target_rate(), 48000);
+        assert!((converter.ratio() - 48000.0 / 44100.0).abs() < 1e-10);
     }
 }

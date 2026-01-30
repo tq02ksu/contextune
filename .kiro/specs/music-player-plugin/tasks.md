@@ -96,8 +96,8 @@
 ### 1.5 64-bit Float Processing Pipeline
 - [x] 1.5.1 Implement sample format conversion to f64
 - [x] 1.5.2 Add volume control in 64-bit precision
-- [-] 1.5.3 Implement sample rate conversion (if needed)
-- [ ] 1.5.4 Add dithering for output conversion
+- [x] 1.5.3 Implement sample rate conversion (if needed)
+- [-] 1.5.4 Add dithering for output conversion
 - [ ] 1.5.5 Write tests for precision preservation
 
 ### 1.6 JNI Wrapper for Java Integration
