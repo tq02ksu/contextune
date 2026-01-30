@@ -2,9 +2,9 @@
 //!
 //! Provides zero-copy audio data flow between decoder and output with minimal latency
 
+use crate::audio::format::AudioFormat;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
-use crate::audio::format::AudioFormat;
 
 /// Lock-free ring buffer for audio samples
 pub struct AudioRingBuffer {
@@ -27,9 +27,12 @@ pub struct RingBufferProducer {
 }
 
 /// Consumer interface for reading audio data from the ring buffer
+#[derive(Clone)]
 pub struct RingBufferConsumer {
     /// Shared reference to the ring buffer
     buffer: Arc<AudioRingBuffer>,
+    /// Underrun counter
+    underrun_count: Arc<AtomicUsize>,
 }
 
 /// Configuration for ring buffer creation
@@ -41,63 +44,73 @@ pub struct RingBufferConfig {
     pub format: AudioFormat,
     /// Whether to allow overwriting old data when buffer is full
     pub allow_overwrite: bool,
+    /// Minimum buffer level before triggering underrun warning (0.0 to 1.0)
+    pub underrun_threshold: f64,
 }
 
 impl RingBufferConfig {
     /// Create a new ring buffer configuration with validation
-    pub fn new(buffer_duration_seconds: f64, format: AudioFormat, allow_overwrite: bool) -> Result<Self, String> {
+    pub fn new(
+        buffer_duration_seconds: f64,
+        format: AudioFormat,
+        allow_overwrite: bool,
+    ) -> Result<Self, String> {
         if buffer_duration_seconds < 0.1 {
             return Err("Buffer duration must be at least 0.1 seconds".to_string());
         }
         if buffer_duration_seconds > 30.0 {
             return Err("Buffer duration must not exceed 30 seconds".to_string());
         }
-        
+
         Ok(Self {
             buffer_duration_seconds,
             format,
             allow_overwrite,
+            underrun_threshold: 0.1, // Default: warn when buffer drops below 10%
         })
     }
-    
+
     /// Create a configuration optimized for low latency (0.5-1 second)
     pub fn low_latency(format: AudioFormat) -> Self {
         Self {
             buffer_duration_seconds: 0.5,
             format,
             allow_overwrite: false,
+            underrun_threshold: 0.05, // 5% for low latency
         }
     }
-    
+
     /// Create a configuration optimized for standard playback (2-3 seconds)
     pub fn standard(format: AudioFormat) -> Self {
         Self {
             buffer_duration_seconds: 2.5,
             format,
             allow_overwrite: false,
+            underrun_threshold: 0.1, // 10% for standard
         }
     }
-    
+
     /// Create a configuration optimized for high latency tolerance (4-5 seconds)
     pub fn high_latency(format: AudioFormat) -> Self {
         Self {
             buffer_duration_seconds: 4.5,
             format,
             allow_overwrite: false,
+            underrun_threshold: 0.15, // 15% for high latency
         }
     }
-    
+
     /// Get the total buffer size in samples
     pub fn total_samples(&self) -> usize {
         (self.buffer_duration_seconds * self.format.sample_rate as f64) as usize
             * self.format.channels as usize
     }
-    
+
     /// Get the buffer size in bytes (assuming f64 samples)
     pub fn buffer_size_bytes(&self) -> usize {
         self.total_samples() * std::mem::size_of::<f64>()
     }
-    
+
     /// Validate the configuration
     pub fn validate(&self) -> Result<(), String> {
         if self.buffer_duration_seconds < 0.1 {
@@ -112,7 +125,7 @@ impl RingBufferConfig {
         if self.format.channels == 0 {
             return Err("Channel count must be greater than 0".to_string());
         }
-        
+
         // Check for reasonable memory usage (limit to ~100MB)
         let max_bytes = 100 * 1024 * 1024; // 100MB
         if self.buffer_size_bytes() > max_bytes {
@@ -121,19 +134,23 @@ impl RingBufferConfig {
                 self.buffer_size_bytes() / (1024 * 1024)
             ));
         }
-        
+
         Ok(())
     }
 }
 
 impl AudioRingBuffer {
     /// Create a new ring buffer with the specified configuration
-    pub fn new(config: RingBufferConfig) -> Result<(RingBufferProducer, RingBufferConsumer), String> {
+    /// Returns a tuple of (producer, consumer) for lock-free communication
+    #[allow(clippy::new_ret_no_self)]
+    pub fn new(
+        config: RingBufferConfig,
+    ) -> Result<(RingBufferProducer, RingBufferConsumer), String> {
         // Validate configuration
         config.validate()?;
-        
+
         let total_samples = config.total_samples();
-        
+
         let buffer = Arc::new(AudioRingBuffer {
             buffer: vec![0.0; total_samples],
             capacity: total_samples,
@@ -141,55 +158,56 @@ impl AudioRingBuffer {
             read_pos: AtomicUsize::new(0),
             format: config.format,
         });
-        
+
         let producer = RingBufferProducer {
             buffer: buffer.clone(),
         };
-        
+
         let consumer = RingBufferConsumer {
             buffer,
+            underrun_count: Arc::new(AtomicUsize::new(0)),
         };
-        
+
         Ok((producer, consumer))
     }
-    
+
     /// Get the buffer capacity in samples
     pub fn capacity(&self) -> usize {
         self.capacity
     }
-    
+
     /// Get the audio format
     pub fn format(&self) -> &AudioFormat {
         &self.format
     }
-    
+
     /// Get the number of samples available for reading
     pub fn available_read(&self) -> usize {
         let write_pos = self.write_pos.load(Ordering::Acquire);
         let read_pos = self.read_pos.load(Ordering::Acquire);
-        
+
         if write_pos >= read_pos {
             write_pos - read_pos
         } else {
             self.capacity - read_pos + write_pos
         }
     }
-    
+
     /// Get the number of samples available for writing
     pub fn available_write(&self) -> usize {
         self.capacity - self.available_read() - 1 // Leave one sample gap to distinguish full from empty
     }
-    
+
     /// Check if the buffer is empty
     pub fn is_empty(&self) -> bool {
         self.available_read() == 0
     }
-    
+
     /// Check if the buffer is full
     pub fn is_full(&self) -> bool {
         self.available_write() == 0
     }
-    
+
     /// Get buffer utilization as a percentage (0.0 to 1.0)
     pub fn utilization(&self) -> f64 {
         self.available_read() as f64 / self.capacity as f64
@@ -202,14 +220,14 @@ impl RingBufferProducer {
     pub fn write(&self, samples: &[f64]) -> usize {
         let available = self.buffer.available_write();
         let to_write = samples.len().min(available);
-        
+
         if to_write == 0 {
             return 0;
         }
-        
+
         let write_pos = self.buffer.write_pos.load(Ordering::Acquire);
         let capacity = self.buffer.capacity;
-        
+
         // Handle wrap-around
         if write_pos + to_write <= capacity {
             // No wrap-around needed
@@ -225,17 +243,17 @@ impl RingBufferProducer {
             // Need to wrap around
             let first_chunk = capacity - write_pos;
             let second_chunk = to_write - first_chunk;
-            
+
             unsafe {
                 let buffer_ptr = self.buffer.buffer.as_ptr() as *mut f64;
-                
+
                 // Write first chunk
                 std::ptr::copy_nonoverlapping(
                     samples.as_ptr(),
                     buffer_ptr.add(write_pos),
                     first_chunk,
                 );
-                
+
                 // Write second chunk at the beginning
                 std::ptr::copy_nonoverlapping(
                     samples.as_ptr().add(first_chunk),
@@ -244,26 +262,28 @@ impl RingBufferProducer {
                 );
             }
         }
-        
+
         // Update write position
         let new_write_pos = (write_pos + to_write) % capacity;
-        self.buffer.write_pos.store(new_write_pos, Ordering::Release);
-        
+        self.buffer
+            .write_pos
+            .store(new_write_pos, Ordering::Release);
+
         to_write
     }
-    
+
     /// Write samples with potential overwrite if buffer is full
     /// Returns the number of samples actually written
     pub fn write_overwrite(&self, samples: &[f64]) -> usize {
         let capacity = self.buffer.capacity;
         let to_write = samples.len().min(capacity - 1); // Leave one sample gap
-        
+
         if to_write == 0 {
             return 0;
         }
-        
+
         let write_pos = self.buffer.write_pos.load(Ordering::Acquire);
-        
+
         // Handle wrap-around
         if write_pos + to_write <= capacity {
             // No wrap-around needed
@@ -279,17 +299,17 @@ impl RingBufferProducer {
             // Need to wrap around
             let first_chunk = capacity - write_pos;
             let second_chunk = to_write - first_chunk;
-            
+
             unsafe {
                 let buffer_ptr = self.buffer.buffer.as_ptr() as *mut f64;
-                
+
                 // Write first chunk
                 std::ptr::copy_nonoverlapping(
                     samples.as_ptr(),
                     buffer_ptr.add(write_pos),
                     first_chunk,
                 );
-                
+
                 // Write second chunk at the beginning
                 std::ptr::copy_nonoverlapping(
                     samples.as_ptr().add(first_chunk),
@@ -298,28 +318,30 @@ impl RingBufferProducer {
                 );
             }
         }
-        
+
         // Update write position
         let new_write_pos = (write_pos + to_write) % capacity;
-        self.buffer.write_pos.store(new_write_pos, Ordering::Release);
-        
+        self.buffer
+            .write_pos
+            .store(new_write_pos, Ordering::Release);
+
         // If we overwrote data, advance read position
         let available_after_write = self.buffer.available_read();
         if available_after_write >= capacity - 1 {
             // We overwrote some data, advance read position
-            let read_pos = self.buffer.read_pos.load(Ordering::Acquire);
+            let _read_pos = self.buffer.read_pos.load(Ordering::Acquire);
             let new_read_pos = (new_write_pos + 1) % capacity;
             self.buffer.read_pos.store(new_read_pos, Ordering::Release);
         }
-        
+
         to_write
     }
-    
+
     /// Get the number of samples that can be written without blocking
     pub fn available_write(&self) -> usize {
         self.buffer.available_write()
     }
-    
+
     /// Check if the buffer is full
     pub fn is_full(&self) -> bool {
         self.buffer.is_full()
@@ -332,14 +354,14 @@ impl RingBufferConsumer {
     pub fn read(&self, output: &mut [f64]) -> usize {
         let available = self.buffer.available_read();
         let to_read = output.len().min(available);
-        
+
         if to_read == 0 {
             return 0;
         }
-        
+
         let read_pos = self.buffer.read_pos.load(Ordering::Acquire);
         let capacity = self.buffer.capacity;
-        
+
         // Handle wrap-around
         if read_pos + to_read <= capacity {
             // No wrap-around needed
@@ -355,17 +377,17 @@ impl RingBufferConsumer {
             // Need to wrap around
             let first_chunk = capacity - read_pos;
             let second_chunk = to_read - first_chunk;
-            
+
             unsafe {
                 let buffer_ptr = self.buffer.buffer.as_ptr();
-                
+
                 // Read first chunk
                 std::ptr::copy_nonoverlapping(
                     buffer_ptr.add(read_pos),
                     output.as_mut_ptr(),
                     first_chunk,
                 );
-                
+
                 // Read second chunk from the beginning
                 std::ptr::copy_nonoverlapping(
                     buffer_ptr,
@@ -374,45 +396,45 @@ impl RingBufferConsumer {
                 );
             }
         }
-        
+
         // Update read position
         let new_read_pos = (read_pos + to_read) % capacity;
         self.buffer.read_pos.store(new_read_pos, Ordering::Release);
-        
+
         to_read
     }
-    
+
     /// Get the buffer capacity
     pub fn capacity(&self) -> usize {
         self.buffer.capacity()
     }
-    
+
     /// Read samples and fill with silence if not enough data available
     pub fn read_with_silence(&self, output: &mut [f64]) -> usize {
         let read_count = self.read(output);
-        
+
         // Fill remaining with silence
         if read_count < output.len() {
             for sample in &mut output[read_count..] {
                 *sample = 0.0;
             }
         }
-        
+
         output.len()
     }
-    
+
     /// Peek at samples without consuming them
     pub fn peek(&self, output: &mut [f64]) -> usize {
         let available = self.buffer.available_read();
         let to_peek = output.len().min(available);
-        
+
         if to_peek == 0 {
             return 0;
         }
-        
+
         let read_pos = self.buffer.read_pos.load(Ordering::Acquire);
         let capacity = self.buffer.capacity;
-        
+
         // Handle wrap-around
         if read_pos + to_peek <= capacity {
             // No wrap-around needed
@@ -428,17 +450,17 @@ impl RingBufferConsumer {
             // Need to wrap around
             let first_chunk = capacity - read_pos;
             let second_chunk = to_peek - first_chunk;
-            
+
             unsafe {
                 let buffer_ptr = self.buffer.buffer.as_ptr();
-                
+
                 // Peek first chunk
                 std::ptr::copy_nonoverlapping(
                     buffer_ptr.add(read_pos),
                     output.as_mut_ptr(),
                     first_chunk,
                 );
-                
+
                 // Peek second chunk from the beginning
                 std::ptr::copy_nonoverlapping(
                     buffer_ptr,
@@ -447,35 +469,92 @@ impl RingBufferConsumer {
                 );
             }
         }
-        
+
         to_peek
     }
-    
+
     /// Skip samples without reading them
     pub fn skip(&self, count: usize) -> usize {
         let available = self.buffer.available_read();
         let to_skip = count.min(available);
-        
+
         if to_skip == 0 {
             return 0;
         }
-        
+
         let read_pos = self.buffer.read_pos.load(Ordering::Acquire);
         let new_read_pos = (read_pos + to_skip) % self.buffer.capacity;
         self.buffer.read_pos.store(new_read_pos, Ordering::Release);
-        
+
         to_skip
     }
-    
+
     /// Get the number of samples available for reading
     pub fn available_read(&self) -> usize {
         self.buffer.available_read()
     }
-    
+
     /// Check if the buffer is empty
     pub fn is_empty(&self) -> bool {
         self.buffer.is_empty()
     }
+
+    /// Check if buffer is experiencing underrun (below threshold)
+    pub fn is_underrun(&self, threshold: f64) -> bool {
+        let utilization = self.buffer.utilization();
+        utilization < threshold
+    }
+
+    /// Get the number of underruns that have occurred
+    pub fn underrun_count(&self) -> usize {
+        self.underrun_count.load(Ordering::Acquire)
+    }
+
+    /// Reset the underrun counter
+    pub fn reset_underrun_count(&self) {
+        self.underrun_count.store(0, Ordering::Release);
+    }
+
+    /// Check buffer health and update underrun counter if needed
+    /// Returns true if buffer is healthy, false if underrun detected
+    pub fn check_health(&self, threshold: f64) -> bool {
+        if self.is_underrun(threshold) {
+            self.underrun_count.fetch_add(1, Ordering::AcqRel);
+            false
+        } else {
+            true
+        }
+    }
+
+    /// Get buffer status information
+    pub fn status(&self) -> RingBufferStatus {
+        let available = self.available_read();
+        let capacity = self.capacity();
+        let utilization = self.buffer.utilization();
+
+        RingBufferStatus {
+            available_samples: available,
+            capacity_samples: capacity,
+            utilization,
+            underrun_count: self.underrun_count(),
+            is_empty: self.is_empty(),
+        }
+    }
+}
+
+/// Ring buffer status information
+#[derive(Debug, Clone)]
+pub struct RingBufferStatus {
+    /// Number of samples available for reading
+    pub available_samples: usize,
+    /// Total buffer capacity in samples
+    pub capacity_samples: usize,
+    /// Buffer utilization (0.0 to 1.0)
+    pub utilization: f64,
+    /// Number of underruns detected
+    pub underrun_count: usize,
+    /// Whether the buffer is empty
+    pub is_empty: bool,
 }
 
 impl Default for RingBufferConfig {
@@ -504,13 +583,14 @@ mod tests {
             buffer_duration_seconds: 1.0,
             format: format.clone(),
             allow_overwrite: false,
+            underrun_threshold: 0.1,
         };
-        
+
         let result = AudioRingBuffer::new(config);
         assert!(result.is_ok());
-        
+
         let (producer, consumer) = result.unwrap();
-        
+
         assert_eq!(producer.available_write(), 44100 * 2 - 1); // -1 for gap
         assert_eq!(consumer.available_read(), 0);
         assert!(consumer.is_empty());
@@ -524,15 +604,16 @@ mod tests {
             buffer_duration_seconds: 1.0,
             format,
             allow_overwrite: false,
+            underrun_threshold: 0.1,
         };
-        
+
         let (producer, consumer) = AudioRingBuffer::new(config).unwrap();
-        
+
         // Write some samples
         let input_samples = vec![1.0, 2.0, 3.0, 4.0];
         let written = producer.write(&input_samples);
         assert_eq!(written, 4);
-        
+
         // Read the samples back
         let mut output_samples = vec![0.0; 4];
         let read = consumer.read(&mut output_samples);
@@ -547,31 +628,32 @@ mod tests {
             buffer_duration_seconds: 0.1, // Small buffer for testing, but above minimum
             format,
             allow_overwrite: false,
+            underrun_threshold: 0.1,
         };
-        
+
         let (producer, consumer) = AudioRingBuffer::new(config).unwrap();
         let capacity = producer.buffer.capacity;
-        
+
         // Fill most of the buffer
         let samples1 = vec![1.0; capacity - 10];
         let written1 = producer.write(&samples1);
         assert_eq!(written1, capacity - 10);
-        
+
         // Read some samples to make space
         let mut output = vec![0.0; 5];
         let read1 = consumer.read(&mut output);
         assert_eq!(read1, 5);
-        
+
         // Write more samples that will wrap around
         let samples2 = vec![2.0; 10];
         let written2 = producer.write(&samples2);
         assert_eq!(written2, 10);
-        
+
         // Read remaining samples
         let mut output2 = vec![0.0; capacity - 10];
         let read2 = consumer.read(&mut output2);
         assert_eq!(read2, capacity - 10);
-        
+
         // The first part should be the remaining 1.0 samples (capacity - 10 - 5 = capacity - 15)
         // The last 10 samples should be the 2.0 samples that wrapped around
         let remaining_ones = capacity - 15; // We wrote capacity-10, read 5, so capacity-15 remain
@@ -590,16 +672,17 @@ mod tests {
             buffer_duration_seconds: 0.1, // Small buffer, but above minimum
             format,
             allow_overwrite: true,
+            underrun_threshold: 0.1,
         };
-        
-        let (producer, consumer) = AudioRingBuffer::new(config).unwrap();
+
+        let (producer, _consumer) = AudioRingBuffer::new(config).unwrap();
         let capacity = producer.buffer.capacity;
-        
+
         // Fill the entire buffer with overwrite
         let samples = vec![1.0; capacity * 2]; // More than capacity
         let written = producer.write_overwrite(&samples);
         assert_eq!(written, capacity - 1); // Should write capacity - 1
-        
+
         // Buffer should be nearly full
         assert!(producer.buffer.available_read() > 0);
     }
@@ -611,28 +694,29 @@ mod tests {
             buffer_duration_seconds: 1.0,
             format,
             allow_overwrite: false,
+            underrun_threshold: 0.1,
         };
-        
+
         let (producer, consumer) = AudioRingBuffer::new(config).unwrap();
-        
+
         // Write some samples
         let input_samples = vec![1.0, 2.0, 3.0, 4.0, 5.0];
         producer.write(&input_samples);
-        
+
         // Peek at samples
         let mut peek_output = vec![0.0; 3];
         let peeked = consumer.peek(&mut peek_output);
         assert_eq!(peeked, 3);
         assert_eq!(peek_output, vec![1.0, 2.0, 3.0]);
-        
+
         // Available read should not change after peek
         assert_eq!(consumer.available_read(), 5);
-        
+
         // Skip some samples
         let skipped = consumer.skip(2);
         assert_eq!(skipped, 2);
         assert_eq!(consumer.available_read(), 3);
-        
+
         // Read remaining samples
         let mut output = vec![0.0; 3];
         let read = consumer.read(&mut output);
@@ -647,19 +731,20 @@ mod tests {
             buffer_duration_seconds: 1.0,
             format,
             allow_overwrite: false,
+            underrun_threshold: 0.1,
         };
-        
+
         let (producer, consumer) = AudioRingBuffer::new(config).unwrap();
-        
+
         // Write fewer samples than we'll try to read
         let input_samples = vec![1.0, 2.0];
         producer.write(&input_samples);
-        
+
         // Try to read more samples than available
         let mut output = vec![99.0; 5]; // Initialize with non-zero values
         let read = consumer.read_with_silence(&mut output);
         assert_eq!(read, 5); // Should always return requested amount
-        
+
         // First two should be the actual data, rest should be silence
         assert_eq!(output[0], 1.0);
         assert_eq!(output[1], 2.0);
@@ -675,25 +760,26 @@ mod tests {
             buffer_duration_seconds: 1.0,
             format,
             allow_overwrite: false,
+            underrun_threshold: 0.1,
         };
-        
-        let (producer, consumer) = AudioRingBuffer::new(config).unwrap();
+
+        let (producer, _consumer) = AudioRingBuffer::new(config).unwrap();
         let capacity = producer.buffer.capacity;
-        
+
         // Initially empty
         assert_eq!(producer.buffer.utilization(), 0.0);
-        
+
         // Fill half the buffer
         let samples = vec![1.0; capacity / 2];
         producer.write(&samples);
-        
+
         let utilization = producer.buffer.utilization();
         assert!((utilization - 0.5).abs() < 0.01); // Should be approximately 50%
-        
+
         // Fill completely
         let remaining_samples = vec![1.0; capacity / 2 - 1];
         producer.write(&remaining_samples);
-        
+
         let full_utilization = producer.buffer.utilization();
         assert!(full_utilization > 0.99); // Should be nearly 100%
     }
@@ -701,31 +787,33 @@ mod tests {
     #[test]
     fn test_ring_buffer_config_validation() {
         let format = AudioFormat::new(44100, 2, SampleFormat::F64);
-        
+
         // Test valid configuration
         let valid_config = RingBufferConfig::new(2.5, format.clone(), false);
         assert!(valid_config.is_ok());
-        
+
         // Test too short duration
         let short_config = RingBufferConfig::new(0.05, format.clone(), false);
         assert!(short_config.is_err());
-        
+
         // Test too long duration
         let long_config = RingBufferConfig::new(35.0, format.clone(), false);
         assert!(long_config.is_err());
-        
+
         // Test validation method
         let config = RingBufferConfig {
             buffer_duration_seconds: 2.0,
             format: format.clone(),
             allow_overwrite: false,
+            underrun_threshold: 0.1,
         };
         assert!(config.validate().is_ok());
-        
+
         let invalid_config = RingBufferConfig {
             buffer_duration_seconds: 0.01, // Too short
             format: format.clone(),
             allow_overwrite: false,
+            underrun_threshold: 0.1,
         };
         assert!(invalid_config.validate().is_err());
     }
@@ -733,25 +821,25 @@ mod tests {
     #[test]
     fn test_ring_buffer_config_presets() {
         let format = AudioFormat::new(44100, 2, SampleFormat::F64);
-        
+
         // Test low latency preset
         let low_latency = RingBufferConfig::low_latency(format.clone());
         assert_eq!(low_latency.buffer_duration_seconds, 0.5);
         assert!(!low_latency.allow_overwrite);
         assert!(low_latency.validate().is_ok());
-        
+
         // Test standard preset
         let standard = RingBufferConfig::standard(format.clone());
         assert_eq!(standard.buffer_duration_seconds, 2.5);
         assert!(!standard.allow_overwrite);
         assert!(standard.validate().is_ok());
-        
+
         // Test high latency preset
         let high_latency = RingBufferConfig::high_latency(format.clone());
         assert_eq!(high_latency.buffer_duration_seconds, 4.5);
         assert!(!high_latency.allow_overwrite);
         assert!(high_latency.validate().is_ok());
-        
+
         // Test default
         let default = RingBufferConfig::default();
         assert_eq!(default.buffer_duration_seconds, 2.5);
@@ -765,16 +853,17 @@ mod tests {
             buffer_duration_seconds: 2.0,
             format: format.clone(),
             allow_overwrite: false,
+            underrun_threshold: 0.1,
         };
-        
+
         // Test total samples calculation
         let expected_samples = (2.0 * 44100.0) as usize * 2; // 2 seconds * sample rate * channels
         assert_eq!(config.total_samples(), expected_samples);
-        
+
         // Test buffer size in bytes
         let expected_bytes = expected_samples * std::mem::size_of::<f64>();
         assert_eq!(config.buffer_size_bytes(), expected_bytes);
-        
+
         // Test that buffer is created with correct size
         let (producer, _consumer) = AudioRingBuffer::new(config).unwrap();
         assert_eq!(producer.buffer.capacity(), expected_samples);
@@ -783,19 +872,151 @@ mod tests {
     #[test]
     fn test_ring_buffer_config_memory_limit() {
         let format = AudioFormat::new(192000, 8, SampleFormat::F64); // High sample rate, many channels
-        
+
         // Test that very large buffers are rejected
         let huge_config = RingBufferConfig {
             buffer_duration_seconds: 30.0, // 30 seconds of 192kHz 8-channel audio
             format,
             allow_overwrite: false,
+            underrun_threshold: 0.1,
         };
-        
+
         let validation_result = huge_config.validate();
         // This should fail due to memory limit (would be ~350MB)
         assert!(validation_result.is_err());
-        
+
         let creation_result = AudioRingBuffer::new(huge_config);
         assert!(creation_result.is_err());
+    }
+
+    #[test]
+    fn test_buffer_underrun_detection() {
+        let format = AudioFormat::new(44100, 1, SampleFormat::F64);
+        let config = RingBufferConfig {
+            buffer_duration_seconds: 1.0,
+            format,
+            allow_overwrite: false,
+            underrun_threshold: 0.2, // 20% threshold
+        };
+
+        let (producer, consumer) = AudioRingBuffer::new(config).unwrap();
+        let capacity = producer.buffer.capacity;
+
+        // Initially empty - should be underrun
+        assert!(consumer.is_underrun(0.2));
+        assert_eq!(consumer.underrun_count(), 0);
+
+        // Check health - should detect underrun
+        assert!(!consumer.check_health(0.2));
+        assert_eq!(consumer.underrun_count(), 1);
+
+        // Fill buffer to 30% - above threshold
+        let samples = vec![1.0; (capacity as f64 * 0.3) as usize];
+        producer.write(&samples);
+
+        // Should not be underrun now
+        assert!(!consumer.is_underrun(0.2));
+        assert!(consumer.check_health(0.2));
+
+        // Underrun count should not increase
+        assert_eq!(consumer.underrun_count(), 1);
+
+        // Read most of the data to trigger underrun again
+        let mut output = vec![0.0; (capacity as f64 * 0.25) as usize];
+        consumer.read(&mut output);
+
+        // Should be underrun again (below 20%)
+        assert!(consumer.is_underrun(0.2));
+        assert!(!consumer.check_health(0.2));
+        assert_eq!(consumer.underrun_count(), 2);
+
+        // Reset counter
+        consumer.reset_underrun_count();
+        assert_eq!(consumer.underrun_count(), 0);
+    }
+
+    #[test]
+    fn test_buffer_status() {
+        let format = AudioFormat::new(44100, 2, SampleFormat::F64);
+        let config = RingBufferConfig {
+            buffer_duration_seconds: 1.0,
+            format,
+            allow_overwrite: false,
+            underrun_threshold: 0.1,
+        };
+
+        let (producer, consumer) = AudioRingBuffer::new(config).unwrap();
+        let capacity = producer.buffer.capacity;
+
+        // Check initial status
+        let status = consumer.status();
+        assert_eq!(status.available_samples, 0);
+        assert_eq!(status.capacity_samples, capacity);
+        assert_eq!(status.utilization, 0.0);
+        assert_eq!(status.underrun_count, 0);
+        assert!(status.is_empty);
+
+        // Write some data
+        let samples = vec![1.0; capacity / 2];
+        producer.write(&samples);
+
+        // Check status after write
+        let status_after = consumer.status();
+        assert_eq!(status_after.available_samples, capacity / 2);
+        assert_eq!(status_after.capacity_samples, capacity);
+        assert!((status_after.utilization - 0.5).abs() < 0.01);
+        assert!(!status_after.is_empty);
+    }
+
+    #[test]
+    fn test_underrun_threshold_configuration() {
+        let format = AudioFormat::new(44100, 1, SampleFormat::F64);
+
+        // Test low latency preset
+        let low_latency = RingBufferConfig::low_latency(format.clone());
+        assert_eq!(low_latency.underrun_threshold, 0.05);
+
+        // Test standard preset
+        let standard = RingBufferConfig::standard(format.clone());
+        assert_eq!(standard.underrun_threshold, 0.1);
+
+        // Test high latency preset
+        let high_latency = RingBufferConfig::high_latency(format.clone());
+        assert_eq!(high_latency.underrun_threshold, 0.15);
+    }
+
+    #[test]
+    fn test_read_with_underrun_handling() {
+        let format = AudioFormat::new(44100, 1, SampleFormat::F64);
+        let config = RingBufferConfig {
+            buffer_duration_seconds: 1.0,
+            format,
+            allow_overwrite: false,
+            underrun_threshold: 0.1,
+        };
+
+        let (producer, consumer) = AudioRingBuffer::new(config).unwrap();
+
+        // Write small amount of data
+        let input_samples = vec![1.0, 2.0, 3.0];
+        producer.write(&input_samples);
+
+        // Try to read more than available - should handle gracefully
+        let mut output = vec![0.0; 10];
+        let read = consumer.read(&mut output);
+        assert_eq!(read, 3); // Only 3 samples available
+
+        // Check that underrun was detected
+        assert!(consumer.is_underrun(0.1));
+
+        // Use read_with_silence to handle underrun
+        let mut output2 = vec![99.0; 10];
+        let read2 = consumer.read_with_silence(&mut output2);
+        assert_eq!(read2, 10); // Always returns requested amount
+
+        // All should be silence since buffer is empty
+        for sample in &output2 {
+            assert_eq!(*sample, 0.0);
+        }
     }
 }

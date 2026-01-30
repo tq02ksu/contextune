@@ -89,9 +89,9 @@
 - [x] 1.4.1 Design lock-free ring buffer structure
 - [x] 1.4.2 Implement producer (decoder) interface
 - [x] 1.4.3 Implement consumer (playback) interface
-- [-] 1.4.4 Add buffer size configuration (2-5 seconds)
-- [ ] 1.4.5 Implement buffer underrun handling
-- [ ] 1.4.6 Write concurrency tests for ring buffer
+- [x] 1.4.4 Add buffer size configuration (2-5 seconds)
+- [x] 1.4.5 Implement buffer underrun handling
+- [x] 1.4.6 Write concurrency tests for ring buffer
 
 ### 1.5 64-bit Float Processing Pipeline
 - [ ] 1.5.1 Implement sample format conversion to f64

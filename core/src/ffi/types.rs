@@ -53,7 +53,7 @@ pub fn rust_string_to_c_string(s: &str) -> Result<CString, std::ffi::NulError> {
 }
 
 /// Convert C string to Rust string
-/// 
+///
 /// # Safety
 /// The caller must ensure that `ptr` is a valid null-terminated C string
 /// and that it remains valid for the duration of the returned string slice.
@@ -61,7 +61,7 @@ pub unsafe fn c_string_to_rust_str<'a>(ptr: *const c_char) -> Result<&'a str, st
     if ptr.is_null() {
         return Ok("");
     }
-    
+
     let c_str = CStr::from_ptr(ptr);
     c_str.to_str()
 }
@@ -132,7 +132,7 @@ mod tests {
     fn test_string_conversions() {
         let rust_str = "Hello, World!";
         let c_string = rust_string_to_c_string(rust_str).unwrap();
-        
+
         unsafe {
             let converted_back = c_string_to_rust_str(c_string.as_ptr()).unwrap();
             assert_eq!(converted_back, rust_str);
