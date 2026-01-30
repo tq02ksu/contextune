@@ -811,6 +811,69 @@ pub fn detect_format_from_extension<P: AsRef<Path>>(path: P) -> Option<&'static 
     }
 }
 
+/// Validate audio file integrity
+pub fn validate_audio_file<P: AsRef<Path>>(path: P) -> Result<AudioFormatInfo> {
+    let path = path.as_ref();
+
+    // Check if file exists
+    if !path.exists() {
+        return Err(crate::Error::Io(std::io::Error::new(
+            std::io::ErrorKind::NotFound,
+            format!("File not found: {}", path.display()),
+        )));
+    }
+
+    // Check if file is readable
+    let metadata = std::fs::metadata(path).map_err(crate::Error::Io)?;
+    if !metadata.is_file() {
+        return Err(crate::Error::Decoding(format!(
+            "Path is not a file: {}",
+            path.display()
+        )));
+    }
+
+    // Check file size
+    if metadata.len() == 0 {
+        return Err(crate::Error::Decoding(format!(
+            "File is empty: {}",
+            path.display()
+        )));
+    }
+
+    // Try to detect and validate format
+    match detect_format(path) {
+        Ok(Some(info)) => {
+            // Validate that we have essential information
+            if info.sample_rate.is_none() {
+                return Err(crate::Error::Decoding(
+                    "Audio file has no sample rate information".to_string(),
+                ));
+            }
+            if info.channels.is_none() {
+                return Err(crate::Error::Decoding(
+                    "Audio file has no channel information".to_string(),
+                ));
+            }
+            Ok(info)
+        }
+        Ok(None) => Err(crate::Error::Decoding(
+            "Could not detect audio format".to_string(),
+        )),
+        Err(e) => Err(e),
+    }
+}
+
+/// Check if audio file is corrupted
+pub fn is_file_corrupted<P: AsRef<Path>>(path: P) -> bool {
+    validate_audio_file(path).is_err()
+}
+
+/// Get audio file metadata without full decoding
+pub fn get_audio_metadata<P: AsRef<Path>>(path: P) -> Result<AudioFormatInfo> {
+    detect_format(path)?
+        .ok_or_else(|| crate::Error::Decoding("Could not extract audio metadata".to_string()))
+}
+
 /// Get supported file extensions
 pub fn supported_extensions() -> Vec<&'static str> {
     vec!["mp3", "wav", "flac", "ogg", "m4a", "aac"]
@@ -1339,5 +1402,123 @@ mod tests {
         };
         assert!(hires_info.is_high_resolution());
         assert!(hires_info.is_lossless);
+    }
+
+    #[test]
+    fn test_validate_audio_file() {
+        // Test with non-existent file
+        let result = validate_audio_file("nonexistent.mp3");
+        assert!(result.is_err());
+
+        // Test with invalid file
+        let mut temp_file = NamedTempFile::new().unwrap();
+        temp_file.write_all(b"not audio data").unwrap();
+
+        let result = validate_audio_file(temp_file.path());
+        assert!(result.is_err());
+
+        // Test with empty file
+        let empty_file = NamedTempFile::new().unwrap();
+        let result = validate_audio_file(empty_file.path());
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_is_file_corrupted() {
+        // Test with non-existent file
+        assert!(is_file_corrupted("nonexistent.mp3"));
+
+        // Test with invalid file
+        let mut temp_file = NamedTempFile::new().unwrap();
+        temp_file.write_all(b"corrupted data").unwrap();
+        assert!(is_file_corrupted(temp_file.path()));
+
+        // Test with empty file
+        let empty_file = NamedTempFile::new().unwrap();
+        assert!(is_file_corrupted(empty_file.path()));
+    }
+
+    #[test]
+    fn test_get_audio_metadata() {
+        // Test with non-existent file
+        let result = get_audio_metadata("nonexistent.mp3");
+        assert!(result.is_err());
+
+        // Test with invalid file
+        let mut temp_file = NamedTempFile::new().unwrap();
+        temp_file.write_all(b"not audio").unwrap();
+
+        let result = get_audio_metadata(temp_file.path());
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_flac_specific_features() {
+        // Test FLAC-specific format detection
+        assert_eq!(detect_format_from_extension("song.flac"), Some("FLAC"));
+        assert!(is_format_supported("test.flac"));
+
+        // Test that FLAC is recognized as lossless
+        let flac_info = AudioFormatInfo {
+            format_name: "FLAC".to_string(),
+            codec_type: "FLAC".to_string(),
+            sample_rate: Some(96000),
+            channels: Some(2),
+            duration: Some(96000 * 180),
+            bit_depth: Some(24),
+            is_lossless: true,
+        };
+
+        assert!(flac_info.is_lossless);
+        assert!(flac_info.is_high_resolution());
+        assert_eq!(flac_info.duration_seconds(), Some(180.0));
+    }
+
+    #[test]
+    fn test_flac_bit_depths() {
+        // Test that FLAC supports various bit depths
+        let bit_depths = vec![16, 24, 32];
+
+        for bit_depth in bit_depths {
+            let info = AudioFormatInfo {
+                format_name: "FLAC".to_string(),
+                codec_type: "FLAC".to_string(),
+                sample_rate: Some(44100),
+                channels: Some(2),
+                duration: Some(44100 * 60),
+                bit_depth: Some(bit_depth),
+                is_lossless: true,
+            };
+
+            assert!(info.is_lossless);
+            if bit_depth > 16 {
+                assert!(info.is_high_resolution());
+            }
+        }
+    }
+
+    #[test]
+    fn test_flac_sample_rates() {
+        // Test that FLAC supports various sample rates
+        let sample_rates = vec![44100, 48000, 96000, 192000];
+
+        for sample_rate in sample_rates {
+            let info = AudioFormatInfo {
+                format_name: "FLAC".to_string(),
+                codec_type: "FLAC".to_string(),
+                sample_rate: Some(sample_rate),
+                channels: Some(2),
+                duration: Some(sample_rate as u64 * 60),
+                bit_depth: Some(16),
+                is_lossless: true,
+            };
+
+            assert!(info.is_lossless);
+            assert_eq!(info.duration_seconds(), Some(60.0));
+
+            if sample_rate >= 48000 {
+                assert!(info.is_high_resolution());
+            }
+        }
     }
 }

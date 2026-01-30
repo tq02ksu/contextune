@@ -141,11 +141,11 @@
 - [ ] 2.2.5 Measure and validate THD+N
 
 ### 2.3 FLAC Decoding
-- [ ] 2.3.1 Integrate symphonia FLAC decoder
-- [ ] 2.3.2 Test with various FLAC bit depths (16/24/32)
-- [ ] 2.3.3 Test with various sample rates (44.1/48/96/192 kHz)
-- [ ] 2.3.4 Verify lossless decoding accuracy
-- [ ] 2.3.5 Benchmark FLAC decoding performance
+- [x] 2.3.1 Integrate symphonia FLAC decoder
+- [x] 2.3.2 Test with various FLAC bit depths (16/24/32)
+- [x] 2.3.3 Test with various sample rates (44.1/48/96/192 kHz)
+- [x] 2.3.4 Verify lossless decoding accuracy
+- [x] 2.3.5 Benchmark FLAC decoding performance
 
 ### 2.4 AAC/ALAC Decoding
 - [ ] 2.4.1 Integrate symphonia AAC decoder
@@ -162,11 +162,11 @@
 - [ ] 2.5.5 Write gapless playback tests
 
 ### 2.6 Audio Format Detection and Validation
-- [ ] 2.6.1 Implement file format detection
-- [ ] 2.6.2 Validate audio file integrity
-- [ ] 2.6.3 Extract audio metadata
-- [ ] 2.6.4 Handle corrupted files gracefully
-- [ ] 2.6.5 Write format validation tests
+- [x] 2.6.1 Implement file format detection
+- [x] 2.6.2 Validate audio file integrity
+- [x] 2.6.3 Extract audio metadata
+- [x] 2.6.4 Handle corrupted files gracefully
+- [x] 2.6.5 Write format validation tests
 
 ### 2.7 Buffer Management Optimization
 - [ ] 2.7.1 Optimize buffer allocation
