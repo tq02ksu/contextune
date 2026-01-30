@@ -1,4 +1,4 @@
-# Contexture Music Player - IntelliJ Platform Plugin
+# Contextune Music Player - IntelliJ Platform Plugin
 
 An intelligent HiFi music player plugin for IntelliJ Platform IDEs (IntelliJ IDEA, PyCharm, WebStorm, etc.) that combines high-quality audio playback with AI-powered music discovery and contextual information.
 
@@ -101,7 +101,7 @@ This will start a new IntelliJ IDEA instance with the plugin installed.
 
 ### Opening the Music Player
 
-- Go to `View` → `Tool Windows` → `Contexture Music Player`
+- Go to `View` → `Tool Windows` → `Contextune Music Player`
 - Or use the tool window button on the right side of the IDE
 
 ### Keyboard Shortcuts

@@ -233,7 +233,7 @@ The UI is ready for integration with:
 ## Testing
 
 **Manual Testing Steps:**
-1. Open tool window: View → Tool Windows → Contexture Music Player
+1. Open tool window: View → Tool Windows → Contextune Music Player
 2. UI should display with all controls
 3. Click Play (should attempt to play, may error without file)
 4. Adjust volume slider (should update label)

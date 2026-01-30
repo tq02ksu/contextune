@@ -18,7 +18,7 @@ class MusicPlayerPlugin : StartupActivity {
     private val logger = Logger.getInstance(MusicPlayerPlugin::class.java)
     
     override fun runActivity(project: Project) {
-        logger.info("Contexture Music Player plugin starting...")
+        logger.info("Contextune Music Player plugin starting...")
         
         var nativeLibraryLoaded = false
         
@@ -38,9 +38,9 @@ class MusicPlayerPlugin : StartupActivity {
             registerShutdownHook()
             
             if (nativeLibraryLoaded) {
-                logger.info("Contexture Music Player plugin started successfully")
+                logger.info("Contextune Music Player plugin started successfully")
             } else {
-                logger.warn("Contexture Music Player plugin started with limited functionality (native library not loaded)")
+                logger.warn("Contextune Music Player plugin started with limited functionality (native library not loaded)")
                 showNativeLibraryWarning(project)
             }
             
@@ -211,7 +211,7 @@ class MusicPlayerPlugin : StartupActivity {
         val errorService = service<ErrorNotificationService>()
         errorService.showError(
             "Music Player Initialization Failed",
-            "Failed to initialize Contexture Music Player: ${e.message ?: "Unknown error"}. " +
+            "Failed to initialize Contextune Music Player: ${e.message ?: "Unknown error"}. " +
                     "Some features may not be available.",
             project
         )

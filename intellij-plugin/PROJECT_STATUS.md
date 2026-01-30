@@ -1,4 +1,4 @@
-# Contexture Music Player Plugin - 项目状态
+# Contextune Music Player Plugin - 项目状态
 
 ## 技术栈
 

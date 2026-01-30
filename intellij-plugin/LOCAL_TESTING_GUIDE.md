@@ -110,7 +110,7 @@ gradle clean buildPlugin
 
 构建成功后，插件 ZIP 文件位于：
 ```
-intellij-plugin/build/distributions/Contexture Music Player-0.1.0.zip
+intellij-plugin/build/distributions/Contextune Music Player-0.1.0.zip
 ```
 
 ## 步骤 4: 在开发模式下测试
@@ -131,7 +131,7 @@ cd intellij-plugin
 
 **测试步骤：**
 1. IDE 启动后，查看右侧工具栏
-2. 点击 "Contexture Music Player" 工具窗口
+2. 点击 "Contextune Music Player" 工具窗口
 3. 测试播放控制、音量调节等功能
 4. 使用键盘快捷键测试
 5. 关闭 IDE，重新打开测试状态持久化
@@ -145,7 +145,7 @@ cd intellij-plugin
 3. 选择 `Plugins`
 4. 点击齿轮图标 ⚙️
 5. 选择 `Install Plugin from Disk...`
-6. 浏览到 `intellij-plugin/build/distributions/Contexture Music Player-0.1.0.zip`
+6. 浏览到 `intellij-plugin/build/distributions/Contextune Music Player-0.1.0.zip`
 7. 点击 `OK`
 8. 重启 IDE
 
@@ -164,10 +164,10 @@ cd intellij-plugin
 
 1. **检查插件是否已安装：**
    - `Settings` → `Plugins` → `Installed`
-   - 查找 "Contexture Music Player"
+   - 查找 "Contextune Music Player"
 
 2. **打开工具窗口：**
-   - `View` → `Tool Windows` → `Contexture Music Player`
+   - `View` → `Tool Windows` → `Contextune Music Player`
    - 或点击右侧工具栏的图标
 
 3. **测试功能：**
@@ -235,7 +235,7 @@ Failed to load native library
 
 **错误信息：**
 ```
-Plugin 'Contexture Music Player' failed to initialize
+Plugin 'Contextune Music Player' failed to initialize
 ```
 
 **解决方案：**
@@ -261,7 +261,7 @@ Execution failed for task ':buildPlugin'
 
 **错误信息：**
 ```
-Plugin 'Contexture Music Player' is incompatible with this installation
+Plugin 'Contextune Music Player' is incompatible with this installation
 ```
 
 **解决方案：**
@@ -345,7 +345,7 @@ open build/reports/jacoco/test/html/index.html
 ### 从 IDE 卸载
 
 1. `Settings` → `Plugins`
-2. 找到 "Contexture Music Player"
+2. 找到 "Contextune Music Player"
 3. 点击齿轮图标 → `Uninstall`
 4. 重启 IDE
 
@@ -406,7 +406,7 @@ export PUBLISH_TOKEN=your_token_here
 ### 文件位置
 
 ```
-插件 ZIP:     build/distributions/Contexture Music Player-0.1.0.zip
+插件 ZIP:     build/distributions/Contextune Music Player-0.1.0.zip
 测试报告:     build/reports/tests/test/index.html
 原生库:       libs/{platform}/libmusic_player_core.{ext}
 配置文件:     ~/.config/JetBrains/.../contextune-music-player.xml

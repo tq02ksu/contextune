@@ -23,6 +23,35 @@ class MusicPlayerPanel(private val project: Project) : JBPanel<MusicPlayerPanel>
     private val errorService = ApplicationManager.getApplication().getService(com.contextune.plugin.services.ErrorNotificationService::class.java)
     private val playerState = com.contextune.plugin.state.PlayerState.getInstance()
     
+    // UI Components - Track Info (lazy initialization)
+    private lateinit var trackTitleLabel: JBLabel
+    private lateinit var trackArtistLabel: JBLabel
+    private lateinit var trackAlbumLabel: JBLabel
+    private lateinit var statusLabel: JBLabel
+    
+    // UI Components - Progress (lazy initialization)
+    private lateinit var progressBar: JSlider
+    private lateinit var positionLabel: JBLabel
+    private lateinit var durationLabel: JBLabel
+    
+    // Playback control buttons (lazy initialization)
+    private lateinit var playPauseButton: JButton
+    private lateinit var stopButton: JButton
+    private lateinit var previousButton: JButton
+    private lateinit var nextButton: JButton
+    
+    // Volume control (lazy initialization)
+    private lateinit var volumeSlider: JSlider
+    private lateinit var volumeLabel: JBLabel
+    private lateinit var muteButton: JButton
+    
+    private var isPlaying = false
+    private var isMuted = false
+    private var currentDuration = 0.0
+    
+    // Update timer (lazy initialization)
+    private lateinit var updateTimer: Timer
+    
     init {
         // Try to get playback service, but don't fail if it's not available
         playbackService = try {
@@ -37,9 +66,36 @@ class MusicPlayerPanel(private val project: Project) : JBPanel<MusicPlayerPanel>
             // Show a simple message when service is not available
             setupUnavailableUI()
         } else {
+            // Initialize UI components
+            initializeUIComponents()
             // Setup normal UI
             setupUI()
         }
+    }
+    
+    /**
+     * Initialize UI components
+     */
+    private fun initializeUIComponents() {
+        trackTitleLabel = JBLabel("No track loaded", SwingConstants.CENTER)
+        trackArtistLabel = JBLabel("", SwingConstants.CENTER)
+        trackAlbumLabel = JBLabel("", SwingConstants.CENTER)
+        statusLabel = JBLabel("Stopped", SwingConstants.CENTER)
+        
+        progressBar = JSlider(0, 1000, 0)
+        positionLabel = JBLabel("0:00")
+        durationLabel = JBLabel("0:00")
+        
+        playPauseButton = JButton("Play")
+        stopButton = JButton("Stop")
+        previousButton = JButton("Previous")
+        nextButton = JButton("Next")
+        
+        volumeSlider = JSlider(0, 100, 75)
+        volumeLabel = JBLabel("Volume: 75%")
+        muteButton = JButton("Mute")
+        
+        updateTimer = Timer(100) { updatePlaybackPosition() }
     }
     
     /**
@@ -62,35 +118,6 @@ class MusicPlayerPanel(private val project: Project) : JBPanel<MusicPlayerPanel>
         messagePanel.add(messageLabel, gbc)
         add(messagePanel, BorderLayout.CENTER)
     }
-    
-    // UI Components - Track Info
-    private val trackTitleLabel = JBLabel("No track loaded", SwingConstants.CENTER)
-    private val trackArtistLabel = JBLabel("", SwingConstants.CENTER)
-    private val trackAlbumLabel = JBLabel("", SwingConstants.CENTER)
-    private val statusLabel = JBLabel("Stopped", SwingConstants.CENTER)
-    
-    // UI Components - Progress
-    private val progressBar = JSlider(0, 1000, 0)
-    private val positionLabel = JBLabel("0:00")
-    private val durationLabel = JBLabel("0:00")
-    
-    // Playback control buttons
-    private val playPauseButton = JButton("Play")
-    private val stopButton = JButton("Stop")
-    private val previousButton = JButton("Previous")
-    private val nextButton = JButton("Next")
-    
-    // Volume control
-    private val volumeSlider = JSlider(0, 100, 75)
-    private val volumeLabel = JBLabel("Volume: 75%")
-    private val muteButton = JButton("Mute")
-    
-    private var isPlaying = false
-    private var isMuted = false
-    private var currentDuration = 0.0
-    
-    // Update timer
-    private val updateTimer = Timer(100) { updatePlaybackPosition() }
     
     /**
      * Setup normal UI when playback service is available

@@ -1,9 +1,9 @@
 #!/bin/bash
-# Build script for Contexture Music Player Plugin (Gradle + Kotlin)
+# Build script for Contextune Music Player Plugin (Gradle + Kotlin)
 
 set -e
 
-echo "Building Contexture Music Player Plugin with Gradle..."
+echo "Building Contextune Music Player Plugin with Gradle..."
 
 # Check if Rust core library exists
 RUST_LIB_DIR="../target/release"

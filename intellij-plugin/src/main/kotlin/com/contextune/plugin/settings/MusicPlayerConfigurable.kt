@@ -14,7 +14,7 @@ class MusicPlayerConfigurable : Configurable {
     private var settingsPanel: JPanel? = null
     
     override fun getDisplayName(): String {
-        return "Contexture Music Player"
+        return "Contextune Music Player"
     }
     
     override fun createComponent(): JComponent {

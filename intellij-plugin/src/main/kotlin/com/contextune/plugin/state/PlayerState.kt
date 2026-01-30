@@ -7,7 +7,7 @@ import com.intellij.util.xmlb.XmlSerializerUtil
  * Persistent state for the music player
  */
 @State(
-    name = "ContextureMusicPlayerState",
+    name = "ContextuneMusicPlayerState",
     storages = [Storage("contextune-music-player.xml")]
 )
 @Service(Service.Level.APP)

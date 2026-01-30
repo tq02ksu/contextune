@@ -242,7 +242,7 @@ fun showInfo(title: String, message: String, project: Project? = null)
 
 **Notification Group:**
 - Registered in plugin.xml
-- ID: "Contexture Music Player"
+- ID: "Contextune Music Player"
 - Display type: BALLOON
 - Logged by default
 
@@ -375,7 +375,7 @@ fun logWarning(message: String)
 **XML Format:**
 ```xml
 <application>
-  <component name="ContextureMusicPlayerState">
+  <component name="ContextuneMusicPlayerState">
     <option name="lastFilePath" value="/path/to/file.mp3" />
     <option name="lastPosition" value="123.45" />
     <option name="volume" value="0.75" />

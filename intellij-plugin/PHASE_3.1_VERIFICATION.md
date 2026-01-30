@@ -87,7 +87,7 @@ intellij-plugin/
 
 **Plugin Metadata:**
 - ✅ Plugin ID: `com.contextune.musicplayer`
-- ✅ Plugin Name: `Contexture Music Player`
+- ✅ Plugin Name: `Contextune Music Player`
 - ✅ Vendor information
 - ✅ Description (comprehensive feature list)
 - ✅ Change notes (version 0.1.0)
@@ -96,7 +96,7 @@ intellij-plugin/
 - ✅ `com.intellij.modules.platform` - Core platform dependency
 
 **Extensions:**
-- ✅ Tool Window: `Contexture Music Player`
+- ✅ Tool Window: `Contextune Music Player`
   - Anchor: right
   - Factory: `MusicPlayerToolWindowFactory`
 - ✅ Settings: Application configurable

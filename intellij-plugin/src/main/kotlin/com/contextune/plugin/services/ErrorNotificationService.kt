@@ -17,7 +17,7 @@ class ErrorNotificationService {
     private val logger = Logger.getInstance(ErrorNotificationService::class.java)
     
     companion object {
-        private const val NOTIFICATION_GROUP_ID = "Contexture Music Player"
+        private const val NOTIFICATION_GROUP_ID = "Contextune Music Player"
     }
     
     /**

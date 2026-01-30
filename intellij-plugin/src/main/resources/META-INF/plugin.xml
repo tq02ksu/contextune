@@ -1,7 +1,7 @@
 <idea-plugin>
     <id>com.contextune.musicplayer</id>
-    <name>Contexture Music Player</name>
-    <vendor email="support@contextune.com" url="https://github.com/tq02ksu/contextune">Contexture</vendor>
+    <name>Contextune Music Player</name>
+    <vendor email="support@contextune.com" url="https://github.com/tq02ksu/contextune">Contextune</vendor>
 
     <description><![CDATA[
     An intelligent HiFi music player plugin for IntelliJ IDEA that combines high-quality audio playback
@@ -35,7 +35,7 @@
 
     <extensions defaultExtensionNs="com.intellij">
         <!-- Tool Window -->
-        <toolWindow id="Contexture Music Player"
+        <toolWindow id="Contextune Music Player"
                     secondary="true"
                     icon="/icons/music_player.svg"
                     anchor="right"
@@ -46,7 +46,7 @@
                 parentId="tools"
                 instance="com.contextune.plugin.settings.MusicPlayerConfigurable"
                 id="com.contextune.plugin.settings.MusicPlayerConfigurable"
-                displayName="Contexture Music Player"/>
+                displayName="Contextune Music Player"/>
 
         <!-- Application Services -->
         <applicationService
@@ -61,7 +61,7 @@
                 serviceImplementation="com.contextune.plugin.state.PlayerState"/>
         
         <!-- Notification Group -->
-        <notificationGroup id="Contexture Music Player"
+        <notificationGroup id="Contextune Music Player"
                           displayType="BALLOON"
                           isLogByDefault="true"/>
         
@@ -71,13 +71,13 @@
 
     <actions>
         <!-- Main Menu Actions -->
-        <group id="Contexture.MusicPlayer.MainMenu"
+        <group id="Contextune.MusicPlayer.MainMenu"
                text="Music Player"
-               description="Contexture Music Player actions"
+               description="Contextune Music Player actions"
                popup="true">
             <add-to-group group-id="ToolsMenu" anchor="last"/>
 
-            <action id="Contexture.MusicPlayer.PlayPause"
+            <action id="Contextune.MusicPlayer.PlayPause"
                     class="com.contextune.plugin.actions.PlayPauseAction"
                     text="Play/Pause"
                     description="Toggle playback"
@@ -85,7 +85,7 @@
                 <keyboard-shortcut keymap="$default" first-keystroke="ctrl alt P"/>
             </action>
 
-            <action id="Contexture.MusicPlayer.Stop"
+            <action id="Contextune.MusicPlayer.Stop"
                     class="com.contextune.plugin.actions.StopAction"
                     text="Stop"
                     description="Stop playback"
@@ -93,7 +93,7 @@
                 <keyboard-shortcut keymap="$default" first-keystroke="ctrl alt S"/>
             </action>
 
-            <action id="Contexture.MusicPlayer.Next"
+            <action id="Contextune.MusicPlayer.Next"
                     class="com.contextune.plugin.actions.NextTrackAction"
                     text="Next Track"
                     description="Play next track"
@@ -101,7 +101,7 @@
                 <keyboard-shortcut keymap="$default" first-keystroke="ctrl alt N"/>
             </action>
 
-            <action id="Contexture.MusicPlayer.Previous"
+            <action id="Contextune.MusicPlayer.Previous"
                     class="com.contextune.plugin.actions.PreviousTrackAction"
                     text="Previous Track"
                     description="Play previous track"
@@ -111,21 +111,21 @@
 
             <separator/>
 
-            <action id="Contexture.MusicPlayer.VolumeUp"
+            <action id="Contextune.MusicPlayer.VolumeUp"
                     class="com.contextune.plugin.actions.VolumeUpAction"
                     text="Volume Up"
                     description="Increase volume">
                 <keyboard-shortcut keymap="$default" first-keystroke="ctrl alt UP"/>
             </action>
 
-            <action id="Contexture.MusicPlayer.VolumeDown"
+            <action id="Contextune.MusicPlayer.VolumeDown"
                     class="com.contextune.plugin.actions.VolumeDownAction"
                     text="Volume Down"
                     description="Decrease volume">
                 <keyboard-shortcut keymap="$default" first-keystroke="ctrl alt DOWN"/>
             </action>
 
-            <action id="Contexture.MusicPlayer.Mute"
+            <action id="Contextune.MusicPlayer.Mute"
                     class="com.contextune.plugin.actions.MuteAction"
                     text="Mute/Unmute"
                     description="Toggle mute">

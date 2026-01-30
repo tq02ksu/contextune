@@ -1,6 +1,6 @@
 # Plugin Icons
 
-This directory contains SVG icons for the Contexture Music Player plugin.
+This directory contains SVG icons for the Contextune Music Player plugin.
 
 ## Required Icons
 

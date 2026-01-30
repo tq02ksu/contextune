@@ -13,7 +13,7 @@ import com.intellij.openapi.diagnostic.Logger
 class PlaybackService {
     
     private val logger = Logger.getInstance(PlaybackService::class.java)
-    private val audioEngine = AudioEngine()
+    private var audioEngine: AudioEngine? = null
     private var initialized = false
     private var currentFilePath: String? = null
     
@@ -23,16 +23,21 @@ class PlaybackService {
         }
         
         try {
-            audioEngine.initialize()
+            // Lazy create audio engine only when initialize is called
+            if (audioEngine == null) {
+                audioEngine = AudioEngine()
+            }
+            
+            audioEngine?.initialize()
             
             // Set up callback for audio events
-            audioEngine.setCallback { event ->
+            audioEngine?.setCallback { event ->
                 handleAudioEvent(event)
             }
             
             logger.info("PlaybackService initialized successfully")
             initialized = true
-        } catch (e: AudioEngineException) {
+        } catch (e: Exception) {
             logger.error("Failed to initialize audio engine", e)
             throw e
         }
@@ -44,8 +49,8 @@ class PlaybackService {
         }
         
         try {
-            audioEngine.clearCallback()
-            audioEngine.shutdown()
+            audioEngine?.clearCallback()
+            audioEngine?.shutdown()
             logger.info("PlaybackService shutdown successfully")
         } catch (e: Exception) {
             logger.error("Error during shutdown", e)
@@ -61,7 +66,7 @@ class PlaybackService {
     fun loadFile(filePath: String) {
         ensureInitialized()
         try {
-            audioEngine.loadFile(filePath)
+            audioEngine?.loadFile(filePath)
             currentFilePath = filePath
             logger.info("Loaded file: $filePath")
         } catch (e: AudioEngineException) {
@@ -76,7 +81,7 @@ class PlaybackService {
     fun play() {
         ensureInitialized()
         try {
-            audioEngine.play()
+            audioEngine?.play()
             logger.debug("Playback started")
         } catch (e: AudioEngineException) {
             logger.error("Failed to start playback", e)
@@ -90,7 +95,7 @@ class PlaybackService {
     fun pause() {
         ensureInitialized()
         try {
-            audioEngine.pause()
+            audioEngine?.pause()
             logger.debug("Playback paused")
         } catch (e: AudioEngineException) {
             logger.error("Failed to pause playback", e)
@@ -104,7 +109,7 @@ class PlaybackService {
     fun stop() {
         ensureInitialized()
         try {
-            audioEngine.stop()
+            audioEngine?.stop()
             logger.debug("Playback stopped")
         } catch (e: AudioEngineException) {
             logger.error("Failed to stop playback", e)
@@ -118,7 +123,7 @@ class PlaybackService {
     fun seek(positionSeconds: Double) {
         ensureInitialized()
         try {
-            audioEngine.seek(positionSeconds)
+            audioEngine?.seek(positionSeconds)
             logger.debug("Seeked to position: $positionSeconds seconds")
         } catch (e: AudioEngineException) {
             logger.error("Failed to seek", e)
@@ -133,7 +138,7 @@ class PlaybackService {
         ensureInitialized()
         require(volume in 0.0..1.0) { "Volume must be between 0.0 and 1.0" }
         try {
-            audioEngine.setVolume(volume)
+            audioEngine?.setVolume(volume)
             logger.debug("Volume set to: $volume")
         } catch (e: AudioEngineException) {
             logger.error("Failed to set volume", e)
@@ -148,7 +153,7 @@ class PlaybackService {
         ensureInitialized()
         require(volume in 0.0..1.0) { "Volume must be between 0.0 and 1.0" }
         try {
-            audioEngine.setVolumeRamped(volume, rampDurationMs)
+            audioEngine?.setVolumeRamped(volume, rampDurationMs)
             logger.debug("Volume ramped to: $volume over ${rampDurationMs}ms")
         } catch (e: AudioEngineException) {
             logger.error("Failed to set volume ramped", e)
@@ -162,7 +167,7 @@ class PlaybackService {
     fun getVolume(): Double {
         ensureInitialized()
         return try {
-            audioEngine.getVolume()
+            audioEngine?.getVolume() ?: 0.0
         } catch (e: AudioEngineException) {
             logger.error("Failed to get volume", e)
             0.0
@@ -175,7 +180,7 @@ class PlaybackService {
     fun mute() {
         ensureInitialized()
         try {
-            audioEngine.mute()
+            audioEngine?.mute()
             logger.debug("Audio muted")
         } catch (e: AudioEngineException) {
             logger.error("Failed to mute", e)
@@ -189,7 +194,7 @@ class PlaybackService {
     fun unmute() {
         ensureInitialized()
         try {
-            audioEngine.unmute()
+            audioEngine?.unmute()
             logger.debug("Audio unmuted")
         } catch (e: AudioEngineException) {
             logger.error("Failed to unmute", e)
@@ -203,7 +208,7 @@ class PlaybackService {
     fun isMuted(): Boolean {
         ensureInitialized()
         return try {
-            audioEngine.isMuted()
+            audioEngine?.isMuted() ?: false
         } catch (e: AudioEngineException) {
             logger.error("Failed to check mute status", e)
             false
@@ -216,7 +221,7 @@ class PlaybackService {
     fun getPosition(): Double {
         ensureInitialized()
         return try {
-            audioEngine.getPosition()
+            audioEngine?.getPosition() ?: 0.0
         } catch (e: AudioEngineException) {
             logger.error("Failed to get position", e)
             0.0
@@ -229,7 +234,7 @@ class PlaybackService {
     fun getDuration(): Double {
         ensureInitialized()
         return try {
-            audioEngine.getDuration()
+            audioEngine?.getDuration() ?: 0.0
         } catch (e: AudioEngineException) {
             logger.error("Failed to get duration", e)
             0.0
@@ -242,7 +247,7 @@ class PlaybackService {
     fun isPlaying(): Boolean {
         ensureInitialized()
         return try {
-            audioEngine.isPlaying()
+            audioEngine?.isPlaying() ?: false
         } catch (e: AudioEngineException) {
             logger.error("Failed to check playing status", e)
             false
