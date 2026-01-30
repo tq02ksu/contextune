@@ -118,11 +118,11 @@
 - [x] 1.7.6 Write playback control tests
 
 ### 1.8 Volume Control
-- [-] 1.8.1 Implement software volume control
-- [-] 1.8.2 Add hardware volume control (when available)
-- [-] 1.8.3 Implement mute/unmute functionality
-- [-] 1.8.4 Add volume ramping to prevent clicks
-- [-] 1.8.5 Write volume control tests
+- [x] 1.8.1 Implement software volume control
+- [ ]* 1.8.2 Add hardware volume control (when available)
+- [x] 1.8.3 Implement mute/unmute functionality
+- [x] 1.8.4 Add volume ramping to prevent clicks
+- [x] 1.8.5 Write volume control tests
 
 ## Phase 2: HiFi Audio Features
 

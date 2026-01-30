@@ -75,7 +75,7 @@ pub trait AudioEngineInterface {
     fn set_volume(&mut self, volume: f32) -> Result<()>;
 
     /// Set playback volume with ramping (0.0 to 1.0)
-    /// 
+    ///
     /// # Arguments
     /// * `volume` - Target volume (0.0 to 1.0)
     /// * `ramp_duration_ms` - Duration of the volume ramp in milliseconds
@@ -638,7 +638,7 @@ impl AudioEngine {
                         state.volume_ramp_step = 0.0;
                     }
                 }
-                
+
                 output[i] = (sample * state.volume as f64) as f32;
             }
         }
@@ -669,7 +669,7 @@ impl AudioEngine {
         // Copy audio data to output buffer with volume ramping
         for (i, output_sample) in output.iter_mut().enumerate() {
             let buffer_index = start_sample + i;
-            
+
             // Apply volume ramping
             if state.volume_ramp_step != 0.0 {
                 // Check if we've reached the target
@@ -689,7 +689,7 @@ impl AudioEngine {
                     state.volume_ramp_step = 0.0;
                 }
             }
-            
+
             if buffer_index < buffer_data.len() {
                 *output_sample = (buffer_data[buffer_index] * state.volume as f64) as f32;
             } else {
@@ -1216,6 +1216,7 @@ impl AudioEngineInterface for AudioEngine {
             state.volume = clamped_volume;
             state.target_volume = clamped_volume;
             state.volume_ramp_step = 0.0; // Instant change
+            state.is_muted = false; // Setting volume explicitly unmutes
             None // Volume changes don't emit events by default
         });
 
@@ -1227,7 +1228,8 @@ impl AudioEngineInterface for AudioEngine {
 
         self.update_state(|state| {
             state.target_volume = clamped_volume;
-            
+            state.is_muted = false; // Setting volume explicitly unmutes
+
             // Calculate ramp step based on sample rate and duration
             if let Some(format) = &state.format {
                 let sample_rate = format.sample_rate as f32;
@@ -1239,7 +1241,7 @@ impl AudioEngineInterface for AudioEngine {
                 state.volume = clamped_volume;
                 state.volume_ramp_step = 0.0;
             }
-            
+
             None
         });
 
@@ -1416,10 +1418,10 @@ mod tests {
         // Now test ramping with format
         engine.set_volume(0.5).unwrap();
         engine.set_volume_ramped(1.0, 100).unwrap();
-        
+
         // Volume should still be at 0.5 initially
         assert_eq!(engine.volume(), 0.5);
-        
+
         // The ramping will happen in the audio callback
         // We can verify the ramp step was calculated
         let state = engine.state.read();
@@ -1444,10 +1446,10 @@ mod tests {
 
         // Ramp down
         engine.set_volume_ramped(0.2, 50).unwrap();
-        
+
         // Volume should still be at 1.0 initially
         assert_eq!(engine.volume(), 1.0);
-        
+
         // Verify ramp step is negative
         let state = engine.state.read();
         assert!(state.volume_ramp_step < 0.0);
@@ -1476,14 +1478,12 @@ mod tests {
         engine.set_volume(0.5).unwrap();
         engine.mute().unwrap();
         assert_eq!(engine.volume(), 0.0);
+        assert!(engine.is_muted());
 
-        // Change volume while muted (should update the actual volume)
+        // Change volume while muted - this should unmute
         engine.set_volume(0.8).unwrap();
         assert_eq!(engine.volume(), 0.8);
-
-        // Mute state should be cleared by set_volume
-        // (This is the current behavior - volume changes unmute)
-        assert!(!engine.is_muted());
+        assert!(!engine.is_muted()); // set_volume explicitly unmutes
     }
 
     #[test]

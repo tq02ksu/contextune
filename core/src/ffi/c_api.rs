@@ -659,6 +659,169 @@ mod tests {
     }
 
     #[test]
+    fn test_volume_ramped() {
+        unsafe {
+            let handle = audio_engine_create();
+
+            // Valid ramped volume
+            assert_eq!(
+                audio_engine_set_volume_ramped(handle, 0.5, 100),
+                FFIResult::Success
+            );
+            assert_eq!(
+                audio_engine_set_volume_ramped(handle, 0.0, 50),
+                FFIResult::Success
+            );
+            assert_eq!(
+                audio_engine_set_volume_ramped(handle, 1.0, 200),
+                FFIResult::Success
+            );
+
+            // Invalid volume
+            assert_eq!(
+                audio_engine_set_volume_ramped(handle, -0.1, 100),
+                FFIResult::InvalidArgument
+            );
+            assert_eq!(
+                audio_engine_set_volume_ramped(handle, 1.5, 100),
+                FFIResult::InvalidArgument
+            );
+
+            // Null handle
+            let null_handle = AudioEngineHandle::null();
+            assert_eq!(
+                audio_engine_set_volume_ramped(null_handle, 0.5, 100),
+                FFIResult::NullPointer
+            );
+
+            audio_engine_destroy(handle);
+        }
+    }
+
+    #[test]
+    fn test_mute_unmute() {
+        unsafe {
+            let handle = audio_engine_create();
+
+            // Set initial volume
+            audio_engine_set_volume(handle, 0.75);
+
+            let mut volume = 0.0;
+            audio_engine_get_volume(handle, &mut volume);
+            assert!((volume - 0.75).abs() < 0.01);
+
+            // Test mute
+            assert_eq!(audio_engine_mute(handle), FFIResult::Success);
+
+            let mut is_muted = 0;
+            assert_eq!(
+                audio_engine_is_muted(handle, &mut is_muted),
+                FFIResult::Success
+            );
+            assert_eq!(is_muted, 1);
+
+            audio_engine_get_volume(handle, &mut volume);
+            assert_eq!(volume, 0.0);
+
+            // Test unmute
+            assert_eq!(audio_engine_unmute(handle), FFIResult::Success);
+
+            assert_eq!(
+                audio_engine_is_muted(handle, &mut is_muted),
+                FFIResult::Success
+            );
+            assert_eq!(is_muted, 0);
+
+            audio_engine_get_volume(handle, &mut volume);
+            assert!((volume - 0.75).abs() < 0.01);
+
+            audio_engine_destroy(handle);
+        }
+    }
+
+    #[test]
+    fn test_mute_unmute_null_handle() {
+        unsafe {
+            let null_handle = AudioEngineHandle::null();
+
+            assert_eq!(audio_engine_mute(null_handle), FFIResult::NullPointer);
+            assert_eq!(audio_engine_unmute(null_handle), FFIResult::NullPointer);
+
+            let mut is_muted = 0;
+            assert_eq!(
+                audio_engine_is_muted(null_handle, &mut is_muted),
+                FFIResult::NullPointer
+            );
+        }
+    }
+
+    #[test]
+    fn test_is_muted_null_pointer() {
+        unsafe {
+            let handle = audio_engine_create();
+
+            let result = audio_engine_is_muted(handle, std::ptr::null_mut());
+            assert_eq!(result, FFIResult::NullPointer);
+
+            audio_engine_destroy(handle);
+        }
+    }
+
+    #[test]
+    fn test_mute_idempotent() {
+        unsafe {
+            let handle = audio_engine_create();
+
+            audio_engine_set_volume(handle, 0.5);
+
+            // Multiple mutes should be idempotent
+            assert_eq!(audio_engine_mute(handle), FFIResult::Success);
+            assert_eq!(audio_engine_mute(handle), FFIResult::Success);
+            assert_eq!(audio_engine_mute(handle), FFIResult::Success);
+
+            let mut is_muted = 0;
+            audio_engine_is_muted(handle, &mut is_muted);
+            assert_eq!(is_muted, 1);
+
+            let mut volume = 1.0;
+            audio_engine_get_volume(handle, &mut volume);
+            assert_eq!(volume, 0.0);
+
+            // Multiple unmutes should be idempotent
+            assert_eq!(audio_engine_unmute(handle), FFIResult::Success);
+            assert_eq!(audio_engine_unmute(handle), FFIResult::Success);
+            assert_eq!(audio_engine_unmute(handle), FFIResult::Success);
+
+            audio_engine_is_muted(handle, &mut is_muted);
+            assert_eq!(is_muted, 0);
+
+            audio_engine_get_volume(handle, &mut volume);
+            assert!((volume - 0.5).abs() < 0.01);
+
+            audio_engine_destroy(handle);
+        }
+    }
+
+    #[test]
+    fn test_volume_ramping_zero_duration() {
+        unsafe {
+            let handle = audio_engine_create();
+
+            // Zero duration should still work (instant change)
+            assert_eq!(
+                audio_engine_set_volume_ramped(handle, 0.8, 0),
+                FFIResult::Success
+            );
+
+            let mut volume = 0.0;
+            audio_engine_get_volume(handle, &mut volume);
+            assert!((volume - 0.8).abs() < 0.01);
+
+            audio_engine_destroy(handle);
+        }
+    }
+
+    #[test]
     fn test_get_position() {
         unsafe {
             let handle = audio_engine_create();
