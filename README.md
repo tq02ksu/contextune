@@ -1,8 +1,8 @@
 # Contexture
 
-[![CI](https://github.com/your-org/contextune/workflows/CI/badge.svg)](https://github.com/your-org/contextune/actions)
-[![codecov](https://codecov.io/gh/your-org/contextune/branch/main/graph/badge.svg?token=YOUR_CODECOV_TOKEN)](https://codecov.io/gh/your-org/contextune)
-[![Coverage Status](https://img.shields.io/codecov/c/github/your-org/contextune/main.svg)](https://codecov.io/gh/your-org/contextune)
+[![CI](https://github.com/tq02ksu/contextune/workflows/CI/badge.svg)](https://github.com/tq02ksu/contextune/actions)
+[![codecov](https://codecov.io/gh/tq02ksu/contextune/branch/main/graph/badge.svg?token=YOUR_CODECOV_TOKEN)](https://codecov.io/gh/tq02ksu/contextune)
+[![Coverage Status](https://img.shields.io/codecov/c/github/tq02ksu/contextune/main.svg)](https://codecov.io/gh/tq02ksu/contextune)
 [![License](https://img.shields.io/badge/license-MIT%2FApache--2.0-blue.svg)](LICENSE)
 
 An intelligent music player plugin for IDEs with high-fidelity audio playback and AI-powered music discovery.
