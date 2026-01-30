@@ -1,7 +1,7 @@
 <idea-plugin>
-    <id>com.contexture.musicplayer</id>
+    <id>com.contextune.musicplayer</id>
     <name>Contexture Music Player</name>
-    <vendor email="support@contexture.com" url="https://github.com/tq02ksu/contexture">Contexture</vendor>
+    <vendor email="support@contextune.com" url="https://github.com/tq02ksu/contextune">Contexture</vendor>
 
     <description><![CDATA[
     An intelligent HiFi music player plugin for IntelliJ IDEA that combines high-quality audio playback
@@ -39,26 +39,26 @@
                     secondary="true"
                     icon="/icons/music_player.svg"
                     anchor="right"
-                    factoryClass="com.contexture.plugin.ui.MusicPlayerToolWindowFactory"/>
+                    factoryClass="com.contextune.plugin.ui.MusicPlayerToolWindowFactory"/>
 
         <!-- Settings -->
         <applicationConfigurable
                 parentId="tools"
-                instance="com.contexture.plugin.settings.MusicPlayerConfigurable"
-                id="com.contexture.plugin.settings.MusicPlayerConfigurable"
+                instance="com.contextune.plugin.settings.MusicPlayerConfigurable"
+                id="com.contextune.plugin.settings.MusicPlayerConfigurable"
                 displayName="Contexture Music Player"/>
 
         <!-- Application Services -->
         <applicationService
-                serviceImplementation="com.contexture.plugin.services.PlaybackService"/>
+                serviceImplementation="com.contextune.plugin.services.PlaybackService"/>
         <applicationService
-                serviceImplementation="com.contexture.plugin.services.PlaylistService"/>
+                serviceImplementation="com.contextune.plugin.services.PlaylistService"/>
         <applicationService
-                serviceImplementation="com.contexture.plugin.services.LibraryService"/>
+                serviceImplementation="com.contextune.plugin.services.LibraryService"/>
         <applicationService
-                serviceImplementation="com.contexture.plugin.services.ErrorNotificationService"/>
+                serviceImplementation="com.contextune.plugin.services.ErrorNotificationService"/>
         <applicationService
-                serviceImplementation="com.contexture.plugin.state.PlayerState"/>
+                serviceImplementation="com.contextune.plugin.state.PlayerState"/>
         
         <!-- Notification Group -->
         <notificationGroup id="Contexture Music Player"
@@ -66,7 +66,7 @@
                           isLogByDefault="true"/>
         
         <!-- Startup Activity -->
-        <postStartupActivity implementation="com.contexture.plugin.MusicPlayerPlugin"/>
+        <postStartupActivity implementation="com.contextune.plugin.MusicPlayerPlugin"/>
     </extensions>
 
     <actions>
@@ -78,7 +78,7 @@
             <add-to-group group-id="ToolsMenu" anchor="last"/>
 
             <action id="Contexture.MusicPlayer.PlayPause"
-                    class="com.contexture.plugin.actions.PlayPauseAction"
+                    class="com.contextune.plugin.actions.PlayPauseAction"
                     text="Play/Pause"
                     description="Toggle playback"
                     icon="/icons/play_pause.svg">
@@ -86,7 +86,7 @@
             </action>
 
             <action id="Contexture.MusicPlayer.Stop"
-                    class="com.contexture.plugin.actions.StopAction"
+                    class="com.contextune.plugin.actions.StopAction"
                     text="Stop"
                     description="Stop playback"
                     icon="/icons/stop.svg">
@@ -94,7 +94,7 @@
             </action>
 
             <action id="Contexture.MusicPlayer.Next"
-                    class="com.contexture.plugin.actions.NextTrackAction"
+                    class="com.contextune.plugin.actions.NextTrackAction"
                     text="Next Track"
                     description="Play next track"
                     icon="/icons/next.svg">
@@ -102,7 +102,7 @@
             </action>
 
             <action id="Contexture.MusicPlayer.Previous"
-                    class="com.contexture.plugin.actions.PreviousTrackAction"
+                    class="com.contextune.plugin.actions.PreviousTrackAction"
                     text="Previous Track"
                     description="Play previous track"
                     icon="/icons/previous.svg">
@@ -112,21 +112,21 @@
             <separator/>
 
             <action id="Contexture.MusicPlayer.VolumeUp"
-                    class="com.contexture.plugin.actions.VolumeUpAction"
+                    class="com.contextune.plugin.actions.VolumeUpAction"
                     text="Volume Up"
                     description="Increase volume">
                 <keyboard-shortcut keymap="$default" first-keystroke="ctrl alt UP"/>
             </action>
 
             <action id="Contexture.MusicPlayer.VolumeDown"
-                    class="com.contexture.plugin.actions.VolumeDownAction"
+                    class="com.contextune.plugin.actions.VolumeDownAction"
                     text="Volume Down"
                     description="Decrease volume">
                 <keyboard-shortcut keymap="$default" first-keystroke="ctrl alt DOWN"/>
             </action>
 
             <action id="Contexture.MusicPlayer.Mute"
-                    class="com.contexture.plugin.actions.MuteAction"
+                    class="com.contextune.plugin.actions.MuteAction"
                     text="Mute/Unmute"
                     description="Toggle mute">
                 <keyboard-shortcut keymap="$default" first-keystroke="ctrl alt M"/>

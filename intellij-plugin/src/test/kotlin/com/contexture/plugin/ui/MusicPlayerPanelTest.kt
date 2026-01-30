@@ -1,4 +1,4 @@
-package com.contexture.plugin.ui
+package com.contextune.plugin.ui
 
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import org.junit.jupiter.api.Test

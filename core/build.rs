@@ -219,10 +219,16 @@ fn configure_optimization(profile: &str) {
             // Link-time optimization
             println!("cargo:rustc-link-arg=-flto");
 
-            // Strip debug symbols
-            if env::var("CARGO_CFG_TARGET_OS").unwrap() != "windows" {
+            // Strip debug symbols (platform-specific)
+            let target_os = env::var("CARGO_CFG_TARGET_OS").unwrap();
+            if target_os == "linux" {
+                // Linux uses GNU ld
                 println!("cargo:rustc-link-arg=-Wl,--strip-debug");
+            } else if target_os == "macos" {
+                // macOS uses Apple's ld which has different syntax
+                println!("cargo:rustc-link-arg=-Wl,-dead_strip");
             }
+            // Windows doesn't need this flag
         }
         "debug" => {
             // Debug configuration

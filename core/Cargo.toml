@@ -1,5 +1,5 @@
 [package]
-name = "contexture-core"
+name = "contextune-core"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
@@ -9,7 +9,7 @@ description = "High-fidelity music player core with AI-powered features"
 
 [lib]
 crate-type = ["cdylib", "staticlib", "rlib"]
-name = "contexture_core"
+name = "contextune_core"
 
 [dependencies]
 # Audio processing

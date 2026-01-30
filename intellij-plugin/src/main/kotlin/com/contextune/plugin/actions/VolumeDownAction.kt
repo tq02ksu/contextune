@@ -1,6 +1,6 @@
-package com.contexture.plugin.actions
+package com.contextune.plugin.actions
 
-import com.contexture.plugin.services.PlaybackService
+import com.contextune.plugin.services.PlaybackService
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.application.ApplicationManager

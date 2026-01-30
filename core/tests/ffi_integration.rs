@@ -2,7 +2,7 @@
 //!
 //! Tests for FFI safety (null pointers, concurrent access, type conversions)
 
-use contexture_core::ffi::{
+use contextune_core::ffi::{
     audio_engine_create, audio_engine_destroy, audio_engine_get_position, audio_engine_load_file,
     audio_engine_pause, audio_engine_play, audio_engine_set_volume, audio_engine_stop,
     AudioEngineHandle, FFIResult,
@@ -215,7 +215,7 @@ mod concurrent_access_tests {
 #[cfg(test)]
 mod type_conversion_tests {
     use super::*;
-    use contexture_core::ffi::types::{
+    use contextune_core::ffi::types::{
         c_string_to_rust_str, rust_string_to_c_string, validate_not_null, validate_not_null_mut,
     };
 

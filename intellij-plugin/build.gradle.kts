@@ -2,15 +2,18 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     id("java")
-    id("org.jetbrains.kotlin.jvm") version "1.9.21"
-    id("org.jetbrains.intellij") version "1.16.1"
+    id("org.jetbrains.kotlin.jvm") version "2.1.0"
+    id("org.jetbrains.intellij.platform") version "2.2.1"
 }
 
-group = "com.contexture"
+group = "com.contextune"
 version = "0.1.0"
 
 repositories {
     mavenCentral()
+    intellijPlatform {
+        defaultRepositories()
+    }
 }
 
 dependencies {
@@ -18,35 +21,29 @@ dependencies {
     testImplementation("org.jetbrains.kotlin:kotlin-test")
     testImplementation("org.junit.jupiter:junit-jupiter:5.10.1")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    
+    intellijPlatform {
+        intellijIdeaCommunity("2025.2.5")
+        bundledPlugins(listOf(/* Plugin Dependencies */))
+    }
 }
 
-// Configure Gradle IntelliJ Plugin
-// Read more: https://plugins.jetbrains.com/docs/intellij/tools-gradle-intellij-plugin.html
-intellij {
-    version.set("2023.2.5")
-    type.set("IC") // Target IDE Platform
-    
-    plugins.set(listOf(/* Plugin Dependencies */))
+kotlin {
+    jvmToolchain(21)
+}
+
+intellijPlatform {
+    buildSearchableOptions = false
 }
 
 tasks {
-    // Set the JVM compatibility versions
-    withType<JavaCompile> {
-        sourceCompatibility = "17"
-        targetCompatibility = "17"
-    }
-    
-    withType<KotlinCompile> {
-        kotlinOptions.jvmTarget = "17"
-    }
-    
     test {
         useJUnitPlatform()
     }
 
     patchPluginXml {
-        sinceBuild.set("232")
-        untilBuild.set("242.*")
+        sinceBuild.set("251")
+        untilBuild.set("253.*")
     }
 
     signPlugin {

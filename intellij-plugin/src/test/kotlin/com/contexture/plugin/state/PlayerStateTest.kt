@@ -1,4 +1,4 @@
-package com.contexture.plugin.state
+package com.contextune.plugin.state
 
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals

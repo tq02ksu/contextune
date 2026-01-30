@@ -127,7 +127,7 @@ intellij-plugin/
 ├── src/
 │   ├── main/
 │   │   ├── kotlin/
-│   │   │   └── com/contexture/plugin/
+│   │   │   └── com/contextune/plugin/
 │   │   │       ├── MusicPlayerPlugin.kt
 │   │   │       ├── actions/         # IDE actions
 │   │   │       ├── audio/           # JNA wrapper for Rust audio engine

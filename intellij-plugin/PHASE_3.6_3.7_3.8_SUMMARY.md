@@ -105,7 +105,7 @@ Runtime.getRuntime().addShutdownHook(Thread {
 **PlayerState.kt:**
 - Implements `PersistentStateComponent<PlayerState>`
 - Uses IntelliJ's XML serialization
-- Stored in `contexture-music-player.xml`
+- Stored in `contextune-music-player.xml`
 - Application-level service
 
 **Serialized Fields:**
@@ -369,7 +369,7 @@ fun logWarning(message: String)
 
 **Storage Location:**
 ```
-~/.config/JetBrains/IntelliJIdea2023.2/options/contexture-music-player.xml
+~/.config/JetBrains/IntelliJIdea2023.2/options/contextune-music-player.xml
 ```
 
 **XML Format:**
@@ -429,14 +429,14 @@ Plugin Stopped
 ## Files Created/Modified
 
 ### Created (4):
-1. `src/main/kotlin/com/contexture/plugin/state/PlayerState.kt` - State persistence
-2. `src/main/kotlin/com/contexture/plugin/services/ErrorNotificationService.kt` - Error notifications
-3. `src/test/kotlin/com/contexture/plugin/state/PlayerStateTest.kt` - State tests
-4. `src/test/kotlin/com/contexture/plugin/services/ErrorNotificationServiceTest.kt` - Error tests
+1. `src/main/kotlin/com/contextune/plugin/state/PlayerState.kt` - State persistence
+2. `src/main/kotlin/com/contextune/plugin/services/ErrorNotificationService.kt` - Error notifications
+3. `src/test/kotlin/com/contextune/plugin/state/PlayerStateTest.kt` - State tests
+4. `src/test/kotlin/com/contextune/plugin/services/ErrorNotificationServiceTest.kt` - Error tests
 
 ### Modified (3):
-1. `src/main/kotlin/com/contexture/plugin/MusicPlayerPlugin.kt` - Enhanced lifecycle
-2. `src/main/kotlin/com/contexture/plugin/ui/MusicPlayerPanel.kt` - State integration
+1. `src/main/kotlin/com/contextune/plugin/MusicPlayerPlugin.kt` - Enhanced lifecycle
+2. `src/main/kotlin/com/contextune/plugin/ui/MusicPlayerPanel.kt` - State integration
 3. `src/main/resources/META-INF/plugin.xml` - Service registration
 
 ## User Experience Improvements

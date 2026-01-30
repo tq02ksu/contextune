@@ -125,24 +125,24 @@ setup_linux_audio() {
     
     # Load new null sink
     if pactl load-module module-null-sink \
-        sink_name=contexture_test_sink \
+        sink_name=contextune_test_sink \
         sink_properties=device.description="Contexture_Test_Sink" \
         rate=48000 \
         channels=2 >/dev/null 2>&1; then
-        log_success "Null sink created: contexture_test_sink"
+        log_success "Null sink created: contextune_test_sink"
     else
         log_warn "Could not create null sink (may already exist)"
     fi
     
     # Set as default sink (optional, only in CI)
     if [ "$CI_MODE" = true ]; then
-        pactl set-default-sink contexture_test_sink 2>/dev/null || true
+        pactl set-default-sink contextune_test_sink 2>/dev/null || true
     fi
     
     # Verify setup
     if [ "$CI_MODE" = false ]; then
         log_info "Available audio sinks:"
-        pactl list short sinks | grep -E "(contexture_test_sink|RUNNING)" || pactl list short sinks
+        pactl list short sinks | grep -E "(contextune_test_sink|RUNNING)" || pactl list short sinks
     fi
     
     log_success "Linux audio environment ready"

@@ -3,7 +3,7 @@
 //! These tests are designed to detect memory leaks in the audio processing pipeline.
 //! They should be run with AddressSanitizer, Valgrind, or other memory debugging tools.
 
-use contexture_core::audio::checksum::{calculate_checksum, ChecksumAlgorithm};
+use contextune_core::audio::checksum::{calculate_checksum, ChecksumAlgorithm};
 use std::collections::HashMap;
 
 /// Test for memory leaks in checksum calculation

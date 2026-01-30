@@ -32,7 +32,7 @@ intellij-plugin/
 ├── src/
 │   ├── main/
 │   │   ├── kotlin/                  # Kotlin 源代码
-│   │   │   └── com/contexture/plugin/
+│   │   │   └── com/contextune/plugin/
 │   │   │       ├── MusicPlayerPlugin.kt
 │   │   │       ├── actions/         # IDE 动作
 │   │   │       │   ├── PlayPauseAction.kt
@@ -60,7 +60,7 @@ intellij-plugin/
 │   │
 │   └── test/
 │       └── kotlin/                  # 测试代码
-│           └── com/contexture/plugin/
+│           └── com/contextune/plugin/
 │               └── utils/
 │                   └── NativeLibraryLoaderTest.kt
 │

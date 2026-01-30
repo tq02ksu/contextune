@@ -52,7 +52,7 @@ fn benchmark_checksum_calculation(c: &mut Criterion) {
 
         group.bench_with_input(BenchmarkId::new("simple", size), &samples, |b, samples| {
             b.iter(|| {
-                black_box(contexture_core::audio::checksum::calculate_simple_checksum(
+                black_box(contextune_core::audio::checksum::calculate_simple_checksum(
                     samples,
                 ))
             })
@@ -60,7 +60,7 @@ fn benchmark_checksum_calculation(c: &mut Criterion) {
 
         group.bench_with_input(BenchmarkId::new("crc32", size), &samples, |b, samples| {
             b.iter(|| {
-                black_box(contexture_core::audio::checksum::calculate_crc32_checksum(
+                black_box(contextune_core::audio::checksum::calculate_crc32_checksum(
                     samples,
                 ))
             })
@@ -68,7 +68,7 @@ fn benchmark_checksum_calculation(c: &mut Criterion) {
 
         group.bench_with_input(BenchmarkId::new("md5", size), &samples, |b, samples| {
             b.iter(|| {
-                black_box(contexture_core::audio::checksum::calculate_md5_checksum(
+                black_box(contextune_core::audio::checksum::calculate_md5_checksum(
                     samples,
                 ))
             })
@@ -76,7 +76,7 @@ fn benchmark_checksum_calculation(c: &mut Criterion) {
 
         group.bench_with_input(BenchmarkId::new("sha256", size), &samples, |b, samples| {
             b.iter(|| {
-                black_box(contexture_core::audio::checksum::calculate_sha256_checksum(
+                black_box(contextune_core::audio::checksum::calculate_sha256_checksum(
                     samples,
                 ))
             })
@@ -100,7 +100,7 @@ fn benchmark_audio_stats(c: &mut Criterion) {
             &samples,
             |b, samples| {
                 b.iter(|| {
-                    black_box(contexture_core::audio::checksum::calculate_audio_stats(
+                    black_box(contextune_core::audio::checksum::calculate_audio_stats(
                         samples,
                     ))
                 })
@@ -111,7 +111,7 @@ fn benchmark_audio_stats(c: &mut Criterion) {
             BenchmarkId::new("calculate_rms", size),
             &samples,
             |b, samples| {
-                b.iter(|| black_box(contexture_core::audio::checksum::calculate_rms(samples)))
+                b.iter(|| black_box(contextune_core::audio::checksum::calculate_rms(samples)))
             },
         );
 
@@ -119,7 +119,7 @@ fn benchmark_audio_stats(c: &mut Criterion) {
             BenchmarkId::new("calculate_peak", size),
             &samples,
             |b, samples| {
-                b.iter(|| black_box(contexture_core::audio::checksum::calculate_peak(samples)))
+                b.iter(|| black_box(contextune_core::audio::checksum::calculate_peak(samples)))
             },
         );
     }
@@ -634,13 +634,13 @@ fn benchmark_sustained_cpu_load(c: &mut Criterion) {
             for chunk in samples.chunks(4410) {
                 // 100ms chunks
                 // Calculate RMS
-                let rms = contexture_core::audio::checksum::calculate_rms(chunk);
+                let rms = contextune_core::audio::checksum::calculate_rms(chunk);
 
                 // Calculate peak
-                let peak = contexture_core::audio::checksum::calculate_peak(chunk);
+                let peak = contextune_core::audio::checksum::calculate_peak(chunk);
 
                 // Calculate checksum
-                let checksum = contexture_core::audio::checksum::calculate_simple_checksum(chunk);
+                let checksum = contextune_core::audio::checksum::calculate_simple_checksum(chunk);
 
                 results.push((rms, peak, checksum));
             }
@@ -796,7 +796,7 @@ fn benchmark_parallel_processing(c: &mut Criterion) {
     // Sequential checksum
     group.bench_function("sequential_checksum", |b| {
         b.iter(|| {
-            let checksum = contexture_core::audio::checksum::calculate_simple_checksum(&samples);
+            let checksum = contextune_core::audio::checksum::calculate_simple_checksum(&samples);
             black_box(checksum)
         })
     });

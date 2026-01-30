@@ -39,7 +39,7 @@
 ```
 
 ### 5. **Smart Defaults**
-- Linux: Creates `contexture_test_sink` (descriptive name)
+- Linux: Creates `contextune_test_sink` (descriptive name)
 - macOS: Suggests BlackHole but works without it
 - Windows: Uses default device with helpful suggestions
 

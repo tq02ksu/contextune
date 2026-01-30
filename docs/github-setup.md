@@ -1,6 +1,6 @@
 # GitHub Repository Setup Guide
 
-This guide helps you configure GitHub repository settings for the Contexture project.
+This guide helps you configure GitHub repository settings for the Contextune project.
 
 ## Table of Contents
 
@@ -61,7 +61,7 @@ Currently, the project doesn't require any secrets for basic functionality. Howe
 **How to create:**
 1. Go to **GitHub Settings** → **Developer settings** → **Personal access tokens** → **Tokens (classic)**
 2. Click **Generate new token (classic)**
-3. Name: `Contexture CI/CD`
+3. Name: `Contextune CI/CD`
 4. Expiration: Choose appropriate duration
 5. Select scopes:
    - ✅ `repo` (Full control of private repositories)
@@ -239,9 +239,9 @@ If you encounter issues:
 
 1. Check the [GitHub Actions documentation](https://docs.github.com/en/actions)
 2. Review workflow logs in the Actions tab
-3. Check the [Contexture CI/CD documentation](ci-cd.md)
+3. Check the [Contextune CI/CD documentation](ci-cd.md)
 
 ---
 
 **Last Updated:** 2024
-**Maintainer:** Contexture Team
+**Maintainer:** Contextune Team

@@ -1,8 +1,8 @@
 # Contexture
 
-[![CI](https://github.com/your-org/contexture/workflows/CI/badge.svg)](https://github.com/your-org/contexture/actions)
-[![codecov](https://codecov.io/gh/your-org/contexture/branch/main/graph/badge.svg?token=YOUR_CODECOV_TOKEN)](https://codecov.io/gh/your-org/contexture)
-[![Coverage Status](https://img.shields.io/codecov/c/github/your-org/contexture/main.svg)](https://codecov.io/gh/your-org/contexture)
+[![CI](https://github.com/your-org/contextune/workflows/CI/badge.svg)](https://github.com/your-org/contextune/actions)
+[![codecov](https://codecov.io/gh/your-org/contextune/branch/main/graph/badge.svg?token=YOUR_CODECOV_TOKEN)](https://codecov.io/gh/your-org/contextune)
+[![Coverage Status](https://img.shields.io/codecov/c/github/your-org/contextune/main.svg)](https://codecov.io/gh/your-org/contextune)
 [![License](https://img.shields.io/badge/license-MIT%2FApache--2.0-blue.svg)](LICENSE)
 
 An intelligent music player plugin for IDEs with high-fidelity audio playback and AI-powered music discovery.
@@ -61,7 +61,7 @@ cargo bench
 ## Project Structure
 
 ```
-contexture/
+contextune/
 ├── core/           # Rust audio core library
 ├── intellij-plugin/  # IntelliJ Platform plugin
 ├── scripts/        # Build and utility scripts

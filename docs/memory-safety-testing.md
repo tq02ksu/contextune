@@ -1,6 +1,6 @@
 # Memory Safety Testing Guide
 
-This document describes how to run memory safety tests for the Contexture music player using Rust's built-in tools and cargo commands.
+This document describes how to run memory safety tests for the Contextune music player using Rust's built-in tools and cargo commands.
 
 ## Overview
 
@@ -76,7 +76,7 @@ cd core
 cargo build --tests
 
 # Run with Valgrind
-valgrind --leak-check=full --error-exitcode=1 target/debug/deps/contexture_core-*
+valgrind --leak-check=full --error-exitcode=1 target/debug/deps/contextune_core-*
 ```
 
 ## Cargo Aliases

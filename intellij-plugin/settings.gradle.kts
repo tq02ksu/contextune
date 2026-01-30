@@ -1,1 +1,1 @@
-rootProject.name = "contexture-music-player"
+rootProject.name = "contextune-music-player"

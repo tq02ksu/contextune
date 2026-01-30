@@ -1,6 +1,6 @@
-package com.contexture.plugin.audio
+package com.contextune.plugin.audio
 
-import com.contexture.plugin.utils.NativeLibraryLoader
+import com.contextune.plugin.utils.NativeLibraryLoader
 import com.sun.jna.Callback
 import com.sun.jna.Library
 import com.sun.jna.Native

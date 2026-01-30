@@ -1,6 +1,6 @@
-package com.contexture.plugin.ui
+package com.contextune.plugin.ui
 
-import com.contexture.plugin.services.PlaybackService
+import com.contextune.plugin.services.PlaybackService
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
 import com.intellij.ui.components.JBLabel
@@ -19,9 +19,49 @@ import javax.swing.*
  */
 class MusicPlayerPanel(private val project: Project) : JBPanel<MusicPlayerPanel>(BorderLayout()) {
     
-    private val playbackService = ApplicationManager.getApplication().getService(PlaybackService::class.java)
-    private val errorService = ApplicationManager.getApplication().getService(com.contexture.plugin.services.ErrorNotificationService::class.java)
-    private val playerState = com.contexture.plugin.state.PlayerState.getInstance()
+    private val playbackService: PlaybackService?
+    private val errorService = ApplicationManager.getApplication().getService(com.contextune.plugin.services.ErrorNotificationService::class.java)
+    private val playerState = com.contextune.plugin.state.PlayerState.getInstance()
+    
+    init {
+        // Try to get playback service, but don't fail if it's not available
+        playbackService = try {
+            ApplicationManager.getApplication().getService(PlaybackService::class.java)
+        } catch (e: Exception) {
+            errorService?.logError("Failed to get PlaybackService", e)
+            null
+        }
+        
+        // Check if playback service is available
+        if (playbackService == null) {
+            // Show a simple message when service is not available
+            setupUnavailableUI()
+        } else {
+            // Setup normal UI
+            setupUI()
+        }
+    }
+    
+    /**
+     * Setup UI when playback service is not available
+     */
+    private fun setupUnavailableUI() {
+        val messagePanel = JPanel(GridBagLayout())
+        val gbc = GridBagConstraints()
+        gbc.gridx = 0
+        gbc.gridy = 0
+        gbc.insets = JBUI.insets(10)
+        
+        val messageLabel = JBLabel("<html><center>" +
+                "<h2>Music Player Unavailable</h2>" +
+                "<p>The native audio library could not be loaded.</p>" +
+                "<p>Audio playback functionality is not available.</p>" +
+                "<p>Please check the plugin installation.</p>" +
+                "</center></html>", SwingConstants.CENTER)
+        
+        messagePanel.add(messageLabel, gbc)
+        add(messagePanel, BorderLayout.CENTER)
+    }
     
     // UI Components - Track Info
     private val trackTitleLabel = JBLabel("No track loaded", SwingConstants.CENTER)
@@ -52,12 +92,30 @@ class MusicPlayerPanel(private val project: Project) : JBPanel<MusicPlayerPanel>
     // Update timer
     private val updateTimer = Timer(100) { updatePlaybackPosition() }
     
-    init {
+    /**
+     * Setup normal UI when playback service is available
+     */
+    private fun setupUI() {
         border = JBUI.Borders.empty(10)
         initializeUI()
         setupListeners()
         initializePlaybackService()
         startUpdateTimer()
+    }
+    
+    /**
+     * Check if playback service is available and show error if not
+     */
+    private fun checkServiceAvailable(): Boolean {
+        if (playbackService == null) {
+            errorService?.showWarning(
+                "Playback Service Unavailable",
+                "The audio playback service is not available. Please restart the IDE or reinstall the plugin.",
+                project
+            )
+            return false
+        }
+        return true
     }
     
     private fun initializeUI() {
@@ -232,23 +290,27 @@ class MusicPlayerPanel(private val project: Project) : JBPanel<MusicPlayerPanel>
      * Initialize playback service
      */
     private fun initializePlaybackService() {
+        if (playbackService == null) {
+            return
+        }
+        
         try {
-            playbackService.initialize()
+            playbackService?.initialize()
             
             // Restore volume from state
             val savedVolume = playerState.volume
             if (savedVolume in 0.0..1.0) {
                 volumeSlider.value = (savedVolume * 100).toInt()
-                playbackService.setVolume(savedVolume)
+                playbackService?.setVolume(savedVolume)
             } else {
                 // Use slider default
                 val initialVolume = volumeSlider.value / 100.0
-                playbackService.setVolume(initialVolume)
+                playbackService?.setVolume(initialVolume)
             }
             
             // Restore mute state
             if (playerState.isMuted) {
-                playbackService.mute()
+                playbackService?.mute()
                 isMuted = true
                 muteButton.text = "Unmute"
                 volumeLabel.text = "Volume: Muted"
@@ -257,7 +319,7 @@ class MusicPlayerPanel(private val project: Project) : JBPanel<MusicPlayerPanel>
             updateStatus("Ready")
         } catch (e: Exception) {
             updateStatus("Error: ${e.message}")
-            errorService.showError(
+            errorService?.showError(
                 "Initialization Error",
                 "Failed to initialize audio engine: ${e.message}",
                 project
@@ -276,11 +338,11 @@ class MusicPlayerPanel(private val project: Project) : JBPanel<MusicPlayerPanel>
      * Update playback position display
      */
     private fun updatePlaybackPosition() {
-        if (!isPlaying) return
+        if (!isPlaying || playbackService == null) return
         
         try {
-            val position = playbackService.getPosition()
-            val duration = playbackService.getDuration()
+            val position = playbackService?.getPosition() ?: return
+            val duration = playbackService?.getDuration() ?: return
             
             if (duration > 0) {
                 currentDuration = duration
@@ -301,13 +363,13 @@ class MusicPlayerPanel(private val project: Project) : JBPanel<MusicPlayerPanel>
      * Seek to position based on mouse click
      */
     private fun seekToPosition(e: MouseEvent) {
-        if (currentDuration <= 0) return
+        if (!checkServiceAvailable() || currentDuration <= 0) return
         
         val percent = e.x.toDouble() / progressBar.width
         val seekPosition = percent * currentDuration
         
         try {
-            playbackService.seek(seekPosition)
+            playbackService?.seek(seekPosition)
             updateStatus("Seeked to ${formatTime(seekPosition)}")
         } catch (ex: Exception) {
             showError("Seek Error", ex.message ?: "Unknown error")
@@ -328,14 +390,16 @@ class MusicPlayerPanel(private val project: Project) : JBPanel<MusicPlayerPanel>
      * Toggle play/pause
      */
     private fun togglePlayPause() {
+        if (!checkServiceAvailable()) return
+        
         try {
             if (isPlaying) {
-                playbackService.pause()
+                playbackService?.pause()
                 isPlaying = false
                 playPauseButton.text = "Play"
                 updateStatus("Paused")
             } else {
-                playbackService.play()
+                playbackService?.play()
                 isPlaying = true
                 playPauseButton.text = "Pause"
                 updateStatus("Playing")
@@ -350,8 +414,10 @@ class MusicPlayerPanel(private val project: Project) : JBPanel<MusicPlayerPanel>
      * Stop playback
      */
     private fun stop() {
+        if (!checkServiceAvailable()) return
+        
         try {
-            playbackService.stop()
+            playbackService?.stop()
             isPlaying = false
             playPauseButton.text = "Play"
             updateStatus("Stopped")
@@ -387,8 +453,10 @@ class MusicPlayerPanel(private val project: Project) : JBPanel<MusicPlayerPanel>
      * Set volume
      */
     private fun setVolume(volume: Double) {
+        if (!checkServiceAvailable()) return
+        
         try {
-            playbackService.setVolumeRamped(volume, 50) // 50ms ramp
+            playbackService?.setVolumeRamped(volume, 50) // 50ms ramp
             val percentage = (volume * 100).toInt()
             volumeLabel.text = "Volume: $percentage%"
             
@@ -407,18 +475,20 @@ class MusicPlayerPanel(private val project: Project) : JBPanel<MusicPlayerPanel>
      * Toggle mute
      */
     private fun toggleMute() {
+        if (!checkServiceAvailable()) return
+        
         try {
             if (isMuted) {
-                playbackService.unmute()
+                playbackService?.unmute()
                 isMuted = false
                 muteButton.text = "Mute"
                 
                 // Update slider to current volume
-                val volume = playbackService.getVolume()
+                val volume = playbackService?.getVolume() ?: 0.75
                 volumeSlider.value = (volume * 100).toInt()
                 volumeLabel.text = "Volume: ${(volume * 100).toInt()}%"
             } else {
-                playbackService.mute()
+                playbackService?.mute()
                 isMuted = true
                 muteButton.text = "Unmute"
                 volumeLabel.text = "Volume: Muted"
@@ -432,8 +502,10 @@ class MusicPlayerPanel(private val project: Project) : JBPanel<MusicPlayerPanel>
      * Load a file for playback
      */
     fun loadFile(filePath: String) {
+        if (!checkServiceAvailable()) return
+        
         try {
-            playbackService.loadFile(filePath)
+            playbackService?.loadFile(filePath)
             
             // Extract filename and set as title
             val fileName = filePath.substringAfterLast('/')
@@ -454,7 +526,7 @@ class MusicPlayerPanel(private val project: Project) : JBPanel<MusicPlayerPanel>
             trackAlbumLabel.text = "" // Will be populated with real metadata in Phase 5
             
             // Get duration
-            currentDuration = playbackService.getDuration()
+            currentDuration = playbackService?.getDuration() ?: 0.0
             durationLabel.text = formatTime(currentDuration)
             positionLabel.text = "0:00"
             progressBar.value = 0
@@ -506,21 +578,23 @@ class MusicPlayerPanel(private val project: Project) : JBPanel<MusicPlayerPanel>
     fun dispose() {
         updateTimer.stop()
         
+        if (playbackService == null) return
+        
         // Save current state
         try {
-            playerState.volume = playbackService.getVolume()
-            playerState.isMuted = playbackService.isMuted()
-            playerState.lastFilePath = playbackService.getCurrentFile() ?: ""
-            playerState.lastPosition = playbackService.getPosition()
+            playerState.volume = playbackService?.getVolume() ?: 0.75
+            playerState.isMuted = playbackService?.isMuted() ?: false
+            playerState.lastFilePath = playbackService?.getCurrentFile() ?: ""
+            playerState.lastPosition = playbackService?.getPosition() ?: 0.0
         } catch (e: Exception) {
-            errorService.logError("Failed to save player state", e)
+            errorService?.logError("Failed to save player state", e)
         }
         
         // Shutdown service
         try {
-            playbackService.shutdown()
+            playbackService?.shutdown()
         } catch (e: Exception) {
-            errorService.logError("Error during shutdown", e)
+            errorService?.logError("Error during shutdown", e)
         }
     }
 }

@@ -1,4 +1,4 @@
-package com.contexture.plugin.services
+package com.contextune.plugin.services
 
 import com.intellij.openapi.components.Service
 

@@ -260,7 +260,7 @@ private fun seekToPosition(e: MouseEvent) {
 ## Files Modified
 
 ### Modified (2):
-1. `src/main/kotlin/com/contexture/plugin/ui/MusicPlayerPanel.kt`
+1. `src/main/kotlin/com/contextune/plugin/ui/MusicPlayerPanel.kt`
    - Added progress bar component
    - Added position/duration labels
    - Added seek functionality
@@ -270,7 +270,7 @@ private fun seekToPosition(e: MouseEvent) {
    - Added formatTime() method
    - Added updateTrackMetadata() method
 
-2. `src/test/kotlin/com/contexture/plugin/ui/MusicPlayerPanelTest.kt`
+2. `src/test/kotlin/com/contextune/plugin/ui/MusicPlayerPanelTest.kt`
    - Added metadata update test
    - Added time formatting test
 

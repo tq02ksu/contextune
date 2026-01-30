@@ -2,8 +2,8 @@
 //!
 //! Tests the lock-free ring buffer under concurrent access from multiple threads
 
-use contexture_core::audio::format::{AudioFormat, SampleFormat};
-use contexture_core::audio::ring_buffer::{AudioRingBuffer, RingBufferConfig};
+use contextune_core::audio::format::{AudioFormat, SampleFormat};
+use contextune_core::audio::ring_buffer::{AudioRingBuffer, RingBufferConfig};
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::Arc;
 use std::thread;

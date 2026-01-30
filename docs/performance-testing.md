@@ -1,6 +1,6 @@
 # Performance Testing and Regression Detection
 
-This document describes how to run performance benchmarks and detect performance regressions in the Contexture audio core.
+This document describes how to run performance benchmarks and detect performance regressions in the Contextune audio core.
 
 ## Overview
 

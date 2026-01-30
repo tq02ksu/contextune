@@ -1,4 +1,4 @@
-package com.contexture.plugin.utils
+package com.contextune.plugin.utils
 
 import kotlin.test.Test
 import kotlin.test.assertNotNull

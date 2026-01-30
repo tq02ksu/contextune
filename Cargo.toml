@@ -8,7 +8,7 @@ version = "0.1.0"
 edition = "2021"
 authors = ["Contexture Team"]
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/tq02ksu/contexture"
+repository = "https://github.com/tq02ksu/contextune"
 
 [workspace.dependencies]
 # Audio processing

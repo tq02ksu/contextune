@@ -64,7 +64,7 @@ else
     echo -e "${YELLOW}Running all unit tests with Valgrind...${NC}"
     
     # Find the main library test executable
-    LIB_TEST=$(find "$TEST_DIR" -name "contexture_core-*" -type f -executable | head -1)
+    LIB_TEST=$(find "$TEST_DIR" -name "contextune_core-*" -type f -executable | head -1)
     if [ -n "$LIB_TEST" ]; then
         echo -e "${YELLOW}Running library tests: $LIB_TEST${NC}"
         valgrind $VALGRIND_OPTS "$LIB_TEST"
@@ -76,7 +76,7 @@ else
     # Run integration tests
     echo -e "${YELLOW}Running integration tests...${NC}"
     for test_exec in "$TEST_DIR"/*; do
-        if [ -x "$test_exec" ] && [[ "$test_exec" != *"contexture_core"* ]]; then
+        if [ -x "$test_exec" ] && [[ "$test_exec" != *"contextune_core"* ]]; then
             echo -e "${YELLOW}Running: $(basename "$test_exec")${NC}"
             if ! valgrind $VALGRIND_OPTS "$test_exec"; then
                 echo -e "${RED}Test failed: $(basename "$test_exec")${NC}"

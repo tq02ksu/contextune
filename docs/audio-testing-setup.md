@@ -4,7 +4,7 @@ This guide explains how to set up your local environment for audio quality testi
 
 ## Overview
 
-The Contexture project includes comprehensive audio quality tests that verify:
+The Contextune project includes comprehensive audio quality tests that verify:
 - Bit-perfect playback
 - Frequency response accuracy
 - THD+N (Total Harmonic Distortion + Noise) measurements
@@ -52,8 +52,8 @@ brew install blackhole-2ch
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/yourusername/contexture.git
-cd contexture
+git clone https://github.com/yourusername/contextune.git
+cd contextune
 ```
 
 ### 2. Generate Reference Audio Files
@@ -108,8 +108,8 @@ pulseaudio --start
 
 # Create null sink
 pactl load-module module-null-sink \
-  sink_name=contexture_test_sink \
-  sink_properties=device.description="Contexture_Test_Sink" \
+  sink_name=contextune_test_sink \
+  sink_properties=device.description="Contextune_Test_Sink" \
   rate=48000 \
   channels=2
 
@@ -322,4 +322,4 @@ For issues or questions:
 
 ## License
 
-This documentation is part of the Contexture project and follows the same license.
+This documentation is part of the Contextune project and follows the same license.

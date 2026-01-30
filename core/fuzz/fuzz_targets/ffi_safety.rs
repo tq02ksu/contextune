@@ -1,7 +1,7 @@
 #![no_main]
 
 use libfuzzer_sys::fuzz_target;
-use contexture_core::ffi::{
+use contextune_core::ffi::{
     audio_engine_create, audio_engine_destroy, audio_engine_load_file,
     audio_engine_set_volume, audio_engine_get_position, audio_engine_play,
     audio_engine_pause, audio_engine_stop, AudioEngineHandle, FFIResult

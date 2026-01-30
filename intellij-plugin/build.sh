@@ -6,10 +6,10 @@ set -e
 echo "Building Contexture Music Player Plugin with Gradle..."
 
 # Check if Rust core library exists
-RUST_LIB_DIR="../core/target/release"
+RUST_LIB_DIR="../target/release"
 if [ ! -d "$RUST_LIB_DIR" ]; then
     echo "Error: Rust core library not found. Please build the Rust core first:"
-    echo "  cd ../core && cargo build --release"
+    echo "  cd core && cargo build --release"
     exit 1
 fi
 
@@ -20,7 +20,7 @@ OS_ARCH=$(uname -m)
 case "$OS_NAME" in
     Linux*)
         PLATFORM="linux-x64"
-        LIB_NAME="libmusic_player_core.so"
+        LIB_NAME="libcontextune_core.so"
         ;;
     Darwin*)
         if [ "$OS_ARCH" = "arm64" ]; then
@@ -28,11 +28,11 @@ case "$OS_NAME" in
         else
             PLATFORM="macos-x64"
         fi
-        LIB_NAME="libmusic_player_core.dylib"
+        LIB_NAME="libcontextune_core.dylib"
         ;;
     MINGW*|MSYS*|CYGWIN*)
         PLATFORM="windows-x64"
-        LIB_NAME="music_player_core.dll"
+        LIB_NAME="contextune_core.dll"
         ;;
     *)
         echo "Error: Unsupported platform: $OS_NAME"

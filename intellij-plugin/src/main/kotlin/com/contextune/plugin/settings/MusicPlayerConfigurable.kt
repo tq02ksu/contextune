@@ -1,4 +1,4 @@
-package com.contexture.plugin.settings
+package com.contextune.plugin.settings
 
 import com.intellij.openapi.options.Configurable
 import java.awt.BorderLayout

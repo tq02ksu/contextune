@@ -1,8 +1,8 @@
-package com.contexture.plugin.services
+package com.contextune.plugin.services
 
-import com.contexture.plugin.audio.AudioEngine
-import com.contexture.plugin.audio.AudioEngineException
-import com.contexture.plugin.audio.AudioEvent
+import com.contextune.plugin.audio.AudioEngine
+import com.contextune.plugin.audio.AudioEngineException
+import com.contextune.plugin.audio.AudioEvent
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.Logger
 
@@ -262,26 +262,26 @@ class PlaybackService {
         logger.debug("Audio event received: $eventType")
         
         when (eventType) {
-            com.contexture.plugin.audio.AudioEventType.STATE_CHANGED -> {
+            com.contextune.plugin.audio.AudioEventType.STATE_CHANGED -> {
                 val state = event.getState()
                 logger.info("Playback state changed to: $state")
                 // TODO: Notify UI listeners
             }
-            com.contexture.plugin.audio.AudioEventType.POSITION_CHANGED -> {
+            com.contextune.plugin.audio.AudioEventType.POSITION_CHANGED -> {
                 // Position updates can be frequent, so only log at trace level
                 logger.trace("Position changed to: ${event.position}")
                 // TODO: Update UI progress bar
             }
-            com.contexture.plugin.audio.AudioEventType.TRACK_ENDED -> {
+            com.contextune.plugin.audio.AudioEventType.TRACK_ENDED -> {
                 logger.info("Track ended")
                 // TODO: Trigger next track or stop
             }
-            com.contexture.plugin.audio.AudioEventType.ERROR -> {
+            com.contextune.plugin.audio.AudioEventType.ERROR -> {
                 val errorMsg = event.getErrorMessage() ?: "Unknown error"
                 logger.error("Audio engine error: $errorMsg")
                 // TODO: Show error notification to user
             }
-            com.contexture.plugin.audio.AudioEventType.BUFFER_UNDERRUN -> {
+            com.contextune.plugin.audio.AudioEventType.BUFFER_UNDERRUN -> {
                 logger.warn("Buffer underrun detected")
                 // TODO: Show buffering indicator
             }

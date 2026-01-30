@@ -1,4 +1,4 @@
-package com.contexture.plugin.services
+package com.contextune.plugin.services
 
 import org.junit.jupiter.api.Test
 import kotlin.test.assertNotNull

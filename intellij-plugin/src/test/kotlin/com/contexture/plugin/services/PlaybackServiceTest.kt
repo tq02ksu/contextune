@@ -1,6 +1,6 @@
-package com.contexture.plugin.services
+package com.contextune.plugin.services
 
-import com.contexture.plugin.audio.AudioEngineException
+import com.contextune.plugin.audio.AudioEngineException
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test

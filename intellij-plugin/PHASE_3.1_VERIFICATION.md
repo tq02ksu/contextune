@@ -16,7 +16,7 @@ intellij-plugin/
 ├── src/
 │   ├── main/
 │   │   ├── kotlin/
-│   │   │   └── com/contexture/plugin/
+│   │   │   └── com/contextune/plugin/
 │   │   │       ├── MusicPlayerPlugin.kt
 │   │   │       ├── actions/           (7 action classes)
 │   │   │       ├── audio/             (RustAudioEngine.kt)
@@ -30,7 +30,7 @@ intellij-plugin/
 │   │       └── icons/
 │   └── test/
 │       └── kotlin/
-│           └── com/contexture/plugin/
+│           └── com/contextune/plugin/
 │               ├── audio/             (RustAudioEngineTest.kt)
 │               ├── services/          (PlaybackServiceTest.kt)
 │               └── utils/             (NativeLibraryLoaderTest.kt)
@@ -86,7 +86,7 @@ intellij-plugin/
 **Manifest Contents:**
 
 **Plugin Metadata:**
-- ✅ Plugin ID: `com.contexture.musicplayer`
+- ✅ Plugin ID: `com.contextune.musicplayer`
 - ✅ Plugin Name: `Contexture Music Player`
 - ✅ Vendor information
 - ✅ Description (comprehensive feature list)

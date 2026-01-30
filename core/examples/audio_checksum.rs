@@ -22,7 +22,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let algorithm = if args.len() >= 3 {
         parse_algorithm(&args[2])?
     } else {
-        contexture_core::audio::checksum::ChecksumAlgorithm::Simple
+        contextune_core::audio::checksum::ChecksumAlgorithm::Simple
     };
 
     println!("Audio Checksum Calculator");
@@ -61,7 +61,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!();
 
     // Calculate checksum
-    let checksum = contexture_core::audio::checksum::calculate_checksum(&samples, algorithm);
+    let checksum = contextune_core::audio::checksum::calculate_checksum(&samples, algorithm);
 
     println!("Checksum:");
     println!("  Algorithm: {:?}", checksum.algorithm);
@@ -70,7 +70,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!();
 
     // Calculate audio statistics
-    let stats = contexture_core::audio::checksum::calculate_audio_stats(&samples);
+    let stats = contextune_core::audio::checksum::calculate_audio_stats(&samples);
 
     println!("Audio Statistics:");
     println!("  RMS: {:.6}", stats.rms);
@@ -85,18 +85,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!();
 
     // Calculate all checksums for comparison
-    if algorithm == contexture_core::audio::checksum::ChecksumAlgorithm::Simple {
+    if algorithm == contextune_core::audio::checksum::ChecksumAlgorithm::Simple {
         println!("All Checksums:");
 
         let algorithms = [
-            contexture_core::audio::checksum::ChecksumAlgorithm::Simple,
-            contexture_core::audio::checksum::ChecksumAlgorithm::Crc32,
-            contexture_core::audio::checksum::ChecksumAlgorithm::Md5,
-            contexture_core::audio::checksum::ChecksumAlgorithm::Sha256,
+            contextune_core::audio::checksum::ChecksumAlgorithm::Simple,
+            contextune_core::audio::checksum::ChecksumAlgorithm::Crc32,
+            contextune_core::audio::checksum::ChecksumAlgorithm::Md5,
+            contextune_core::audio::checksum::ChecksumAlgorithm::Sha256,
         ];
 
         for alg in algorithms {
-            let cs = contexture_core::audio::checksum::calculate_checksum(&samples, alg);
+            let cs = contextune_core::audio::checksum::calculate_checksum(&samples, alg);
             println!("  {:?}: {}", alg, cs.value);
         }
     }
@@ -106,12 +106,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 fn parse_algorithm(
     s: &str,
-) -> Result<contexture_core::audio::checksum::ChecksumAlgorithm, Box<dyn std::error::Error>> {
+) -> Result<contextune_core::audio::checksum::ChecksumAlgorithm, Box<dyn std::error::Error>> {
     match s.to_lowercase().as_str() {
-        "simple" => Ok(contexture_core::audio::checksum::ChecksumAlgorithm::Simple),
-        "crc32" => Ok(contexture_core::audio::checksum::ChecksumAlgorithm::Crc32),
-        "md5" => Ok(contexture_core::audio::checksum::ChecksumAlgorithm::Md5),
-        "sha256" => Ok(contexture_core::audio::checksum::ChecksumAlgorithm::Sha256),
+        "simple" => Ok(contextune_core::audio::checksum::ChecksumAlgorithm::Simple),
+        "crc32" => Ok(contextune_core::audio::checksum::ChecksumAlgorithm::Crc32),
+        "md5" => Ok(contextune_core::audio::checksum::ChecksumAlgorithm::Md5),
+        "sha256" => Ok(contextune_core::audio::checksum::ChecksumAlgorithm::Sha256),
         _ => Err(format!("Unknown algorithm: {}", s).into()),
     }
 }

@@ -1,4 +1,4 @@
-package com.contexture.plugin.audio
+package com.contextune.plugin.audio
 
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach

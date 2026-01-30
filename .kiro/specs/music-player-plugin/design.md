@@ -108,7 +108,7 @@ graph TB
 The project follows a monorepo structure with clear separation between Rust core and IDE plugin layers:
 
 ```
-contexture/
+contextune/
 ├── Cargo.toml                    # Rust workspace configuration
 ├── README.md                     # Project documentation
 ├── LICENSE                       # License file
@@ -191,7 +191,7 @@ contexture/
 │   ├── src/
 │   │   ├── main/
 │   │   │   ├── kotlin/
-│   │   │   │   └── com/contexture/plugin/
+│   │   │   │   └── com/contextune/plugin/
 │   │   │   │       ├── MusicPlayerPlugin.kt      # Plugin entry point
 │   │   │   │       │
 │   │   │   │       ├── audio/                    # Audio integration

@@ -1,9 +1,9 @@
-package com.contexture.plugin
+package com.contextune.plugin
 
-import com.contexture.plugin.services.ErrorNotificationService
-import com.contexture.plugin.services.PlaybackService
-import com.contexture.plugin.state.PlayerState
-import com.contexture.plugin.utils.NativeLibraryLoader
+import com.contextune.plugin.services.ErrorNotificationService
+import com.contextune.plugin.services.PlaybackService
+import com.contextune.plugin.state.PlayerState
+import com.contextune.plugin.utils.NativeLibraryLoader
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
@@ -20,20 +20,29 @@ class MusicPlayerPlugin : StartupActivity {
     override fun runActivity(project: Project) {
         logger.info("Contexture Music Player plugin starting...")
         
+        var nativeLibraryLoaded = false
+        
         try {
-            // Phase 1: Load native library
-            loadNativeLibrary()
+            // Phase 1: Try to load native library (non-fatal if fails)
+            nativeLibraryLoaded = loadNativeLibrary()
             
-            // Phase 2: Initialize services
-            initializeServices()
+            // Phase 2: Initialize services (may have limited functionality without native lib)
+            initializeServices(nativeLibraryLoaded)
             
-            // Phase 3: Restore previous state
-            restoreState()
+            // Phase 3: Restore previous state (only if native lib loaded)
+            if (nativeLibraryLoaded) {
+                restoreState()
+            }
             
             // Phase 4: Register shutdown hook
             registerShutdownHook()
             
-            logger.info("Contexture Music Player plugin started successfully")
+            if (nativeLibraryLoaded) {
+                logger.info("Contexture Music Player plugin started successfully")
+            } else {
+                logger.warn("Contexture Music Player plugin started with limited functionality (native library not loaded)")
+                showNativeLibraryWarning(project)
+            }
             
         } catch (e: Exception) {
             handleInitializationError(e, project)
@@ -42,31 +51,55 @@ class MusicPlayerPlugin : StartupActivity {
     
     /**
      * Load native library
+     * @return true if loaded successfully, false otherwise
      */
-    private fun loadNativeLibrary() {
-        try {
+    private fun loadNativeLibrary(): Boolean {
+        return try {
             NativeLibraryLoader.loadNativeLibrary()
             logger.info("Native library loaded successfully")
+            true
         } catch (e: Exception) {
-            logger.error("Failed to load native library", e)
-            throw PluginInitializationException("Failed to load native audio library", e)
+            logger.error("Failed to load native library - plugin will run with limited functionality", e)
+            false
+        }
+    }
+    
+    /**
+     * Show warning about native library not being loaded
+     */
+    private fun showNativeLibraryWarning(project: Project) {
+        try {
+            val errorService = service<ErrorNotificationService>()
+            errorService.showWarning(
+                "Music Player: Native Library Not Loaded",
+                "The native audio library could not be loaded. The UI is available but audio playback will not work. " +
+                        "Please check the plugin installation and ensure the native library is present.",
+                project
+            )
+        } catch (e: Exception) {
+            logger.error("Failed to show native library warning", e)
         }
     }
     
     /**
      * Initialize application services
+     * @param nativeLibraryLoaded whether the native library was loaded successfully
      */
-    private fun initializeServices() {
+    private fun initializeServices(nativeLibraryLoaded: Boolean) {
         try {
-            val playbackService = service<PlaybackService>()
-            playbackService.initialize()
-            logger.info("Playback service initialized")
+            if (nativeLibraryLoaded) {
+                val playbackService = service<PlaybackService>()
+                playbackService.initialize()
+                logger.info("Playback service initialized")
+            } else {
+                logger.info("Skipping playback service initialization (native library not loaded)")
+            }
             
             // Other services will be initialized on-demand
             
         } catch (e: Exception) {
             logger.error("Failed to initialize services", e)
-            throw PluginInitializationException("Failed to initialize audio services", e)
+            // Don't throw - allow plugin to continue with limited functionality
         }
     }
     
