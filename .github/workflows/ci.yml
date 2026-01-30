@@ -284,7 +284,7 @@ jobs:
       
       - name: Test JNI Bindings
         run: |
-          cd plugin
+          cd intellij-plugin
           ./gradlew test --tests "*FFI*"
         continue-on-error: true
 
@@ -309,7 +309,7 @@ jobs:
       
       - name: Run Plugin Tests
         run: |
-          cd plugin
+          cd intellij-plugin
           ./gradlew test
         continue-on-error: true
       
@@ -318,7 +318,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: plugin-test-results
-          path: plugin/build/reports/
+          path: intellij-plugin/build/reports/
           if-no-files-found: ignore
 
 
