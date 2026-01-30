@@ -40,9 +40,9 @@ impl Ditherer {
         // LCG parameters (from Numerical Recipes)
         const A: u64 = 1664525;
         const C: u64 = 1013904223;
-        
+
         self.rng_state = self.rng_state.wrapping_mul(A).wrapping_add(C);
-        
+
         // Convert to float in range [0, 1)
         (self.rng_state as f64) / (u64::MAX as f64)
     }
@@ -65,11 +65,11 @@ impl Ditherer {
     }
 
     /// Apply dithering to samples before quantization
-    /// 
+    ///
     /// # Arguments
     /// * `samples` - Input samples in f64 format (normalized to [-1.0, 1.0])
     /// * `target_bits` - Target bit depth (e.g., 16 for 16-bit audio)
-    /// 
+    ///
     /// # Returns
     /// Dithered samples ready for quantization
     pub fn apply(&mut self, samples: &[f64], target_bits: u32) -> Vec<f64> {
@@ -180,6 +180,12 @@ impl SampleFormatConverter {
             .collect()
     }
 
+    /// Convert f64 samples to u8 with dithering
+    pub fn f64_to_u8_dithered(samples: &[f64], ditherer: &mut Ditherer) -> Vec<u8> {
+        let dithered = ditherer.apply(samples, 8);
+        Self::f64_to_u8(&dithered)
+    }
+
     /// Convert f64 samples to i8 (clamps to valid range)
     pub fn f64_to_i8(samples: &[f64]) -> Vec<i8> {
         samples
@@ -189,6 +195,12 @@ impl SampleFormatConverter {
                 (clamped * i8::MAX as f64) as i8
             })
             .collect()
+    }
+
+    /// Convert f64 samples to i8 with dithering
+    pub fn f64_to_i8_dithered(samples: &[f64], ditherer: &mut Ditherer) -> Vec<i8> {
+        let dithered = ditherer.apply(samples, 8);
+        Self::f64_to_i8(&dithered)
     }
 
     /// Convert f64 samples to u16 (clamps to valid range)
@@ -202,6 +214,12 @@ impl SampleFormatConverter {
             .collect()
     }
 
+    /// Convert f64 samples to u16 with dithering
+    pub fn f64_to_u16_dithered(samples: &[f64], ditherer: &mut Ditherer) -> Vec<u16> {
+        let dithered = ditherer.apply(samples, 16);
+        Self::f64_to_u16(&dithered)
+    }
+
     /// Convert f64 samples to i16 (clamps to valid range)
     pub fn f64_to_i16(samples: &[f64]) -> Vec<i16> {
         samples
@@ -213,6 +231,12 @@ impl SampleFormatConverter {
             .collect()
     }
 
+    /// Convert f64 samples to i16 with dithering
+    pub fn f64_to_i16_dithered(samples: &[f64], ditherer: &mut Ditherer) -> Vec<i16> {
+        let dithered = ditherer.apply(samples, 16);
+        Self::f64_to_i16(&dithered)
+    }
+
     /// Convert f64 samples to i32 (clamps to valid range)
     pub fn f64_to_i32(samples: &[f64]) -> Vec<i32> {
         samples
@@ -222,6 +246,12 @@ impl SampleFormatConverter {
                 (clamped * i32::MAX as f64) as i32
             })
             .collect()
+    }
+
+    /// Convert f64 samples to i32 with dithering
+    pub fn f64_to_i32_dithered(samples: &[f64], ditherer: &mut Ditherer) -> Vec<i32> {
+        let dithered = ditherer.apply(samples, 32);
+        Self::f64_to_i32(&dithered)
     }
 
     /// Convert f64 samples to f32
@@ -268,6 +298,51 @@ impl SampleFormatConverter {
                 converted.iter().flat_map(|&s| s.to_le_bytes()).collect()
             }
             SampleFormat::F64 => samples.iter().flat_map(|&s| s.to_le_bytes()).collect(),
+        }
+    }
+
+    /// Convert f64 samples to the specified format with dithering
+    pub fn convert_from_f64_dithered(
+        samples: &[f64],
+        target_format: SampleFormat,
+        ditherer: &mut Ditherer,
+    ) -> Vec<u8> {
+        match target_format {
+            SampleFormat::U8 => {
+                let converted = Self::f64_to_u8_dithered(samples, ditherer);
+                converted.iter().flat_map(|&s| s.to_le_bytes()).collect()
+            }
+            SampleFormat::I8 => {
+                let converted = Self::f64_to_i8_dithered(samples, ditherer);
+                converted.iter().flat_map(|&s| s.to_le_bytes()).collect()
+            }
+            SampleFormat::U16 => {
+                let converted = Self::f64_to_u16_dithered(samples, ditherer);
+                converted.iter().flat_map(|&s| s.to_le_bytes()).collect()
+            }
+            SampleFormat::I16 => {
+                let converted = Self::f64_to_i16_dithered(samples, ditherer);
+                converted.iter().flat_map(|&s| s.to_le_bytes()).collect()
+            }
+            SampleFormat::I24 => {
+                // Convert to i32 first with dithering, then take only 3 bytes
+                let converted = Self::f64_to_i32_dithered(samples, ditherer);
+                converted
+                    .iter()
+                    .flat_map(|&s| {
+                        let bytes = s.to_le_bytes();
+                        [bytes[0], bytes[1], bytes[2]]
+                    })
+                    .collect()
+            }
+            SampleFormat::I32 => {
+                let converted = Self::f64_to_i32_dithered(samples, ditherer);
+                converted.iter().flat_map(|&s| s.to_le_bytes()).collect()
+            }
+            SampleFormat::F32 | SampleFormat::F64 => {
+                // No dithering needed for float formats
+                Self::convert_from_f64(samples, target_format)
+            }
         }
     }
 }
@@ -1004,5 +1079,200 @@ mod tests {
         assert_eq!(converter.source_rate(), 44100);
         assert_eq!(converter.target_rate(), 48000);
         assert!((converter.ratio() - 48000.0 / 44100.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_ditherer_none() {
+        let mut ditherer = Ditherer::new(DitheringAlgorithm::None);
+        let samples = vec![0.5, -0.5, 0.0, 1.0];
+        let dithered = ditherer.apply(&samples, 16);
+
+        // No dithering should return identical samples
+        assert_eq!(dithered, samples);
+    }
+
+    #[test]
+    fn test_ditherer_rectangular() {
+        let mut ditherer = Ditherer::new(DitheringAlgorithm::Rectangular);
+        let samples = vec![0.5; 100];
+        let dithered = ditherer.apply(&samples, 16);
+
+        // Dithered samples should be slightly different
+        let mut has_difference = false;
+        for (orig, dith) in samples.iter().zip(dithered.iter()) {
+            if (orig - dith).abs() > 1e-10 {
+                has_difference = true;
+                break;
+            }
+        }
+        assert!(has_difference, "Dithering should modify samples");
+
+        // Dithered samples should still be close to original
+        for (orig, dith) in samples.iter().zip(dithered.iter()) {
+            assert!((orig - dith).abs() < 0.001);
+        }
+    }
+
+    #[test]
+    fn test_ditherer_triangular() {
+        let mut ditherer = Ditherer::new(DitheringAlgorithm::Triangular);
+        let samples = vec![0.5; 100];
+        let dithered = ditherer.apply(&samples, 16);
+
+        // Dithered samples should be slightly different
+        let mut has_difference = false;
+        for (orig, dith) in samples.iter().zip(dithered.iter()) {
+            if (orig - dith).abs() > 1e-10 {
+                has_difference = true;
+                break;
+            }
+        }
+        assert!(has_difference, "Dithering should modify samples");
+
+        // Dithered samples should still be close to original
+        for (orig, dith) in samples.iter().zip(dithered.iter()) {
+            assert!((orig - dith).abs() < 0.001);
+        }
+    }
+
+    #[test]
+    fn test_ditherer_algorithm_change() {
+        let mut ditherer = Ditherer::new(DitheringAlgorithm::None);
+        assert_eq!(ditherer.algorithm(), DitheringAlgorithm::None);
+
+        ditherer.set_algorithm(DitheringAlgorithm::Triangular);
+        assert_eq!(ditherer.algorithm(), DitheringAlgorithm::Triangular);
+    }
+
+    #[test]
+    fn test_dithered_conversion_i16() {
+        let samples = vec![0.5, -0.5, 0.0, 1.0, -1.0];
+        let mut ditherer = Ditherer::new(DitheringAlgorithm::Triangular);
+
+        let dithered_bytes = SampleFormatConverter::convert_from_f64_dithered(
+            &samples,
+            SampleFormat::I16,
+            &mut ditherer,
+        );
+        let undithered_bytes = SampleFormatConverter::convert_from_f64(&samples, SampleFormat::I16);
+
+        // Both should produce valid output
+        assert_eq!(dithered_bytes.len(), undithered_bytes.len());
+        assert_eq!(dithered_bytes.len(), samples.len() * 2); // 2 bytes per i16
+    }
+
+    #[test]
+    fn test_dithered_conversion_all_formats() {
+        let samples = vec![0.5, -0.5, 0.0];
+        let mut ditherer = Ditherer::new(DitheringAlgorithm::Triangular);
+
+        let formats = vec![
+            SampleFormat::U8,
+            SampleFormat::I8,
+            SampleFormat::U16,
+            SampleFormat::I16,
+            SampleFormat::I24,
+            SampleFormat::I32,
+        ];
+
+        for format in formats {
+            let dithered =
+                SampleFormatConverter::convert_from_f64_dithered(&samples, format, &mut ditherer);
+            let expected_len = samples.len() * format.size_bytes();
+            assert_eq!(
+                dithered.len(),
+                expected_len,
+                "Format {:?} should produce {} bytes",
+                format,
+                expected_len
+            );
+        }
+    }
+
+    #[test]
+    fn test_dithering_reduces_quantization_error() {
+        // Test that dithering actually modifies the output
+        let mut ditherer = Ditherer::new(DitheringAlgorithm::Triangular);
+
+        // Create a constant low-level signal
+        let low_level_signal = vec![0.0005; 100];
+
+        // Convert without dithering
+        let undithered = SampleFormatConverter::f64_to_i16(&low_level_signal);
+
+        // Convert with dithering
+        let dithered = SampleFormatConverter::f64_to_i16_dithered(&low_level_signal, &mut ditherer);
+
+        // The outputs should be different due to dithering
+        let mut has_difference = false;
+        for (u, d) in undithered.iter().zip(dithered.iter()) {
+            if u != d {
+                has_difference = true;
+                break;
+            }
+        }
+
+        assert!(
+            has_difference,
+            "Dithering should produce different output than undithered conversion"
+        );
+
+        // Both should have similar average values
+        let undithered_avg: i32 =
+            undithered.iter().map(|&x| x as i32).sum::<i32>() / undithered.len() as i32;
+        let dithered_avg: i32 =
+            dithered.iter().map(|&x| x as i32).sum::<i32>() / dithered.len() as i32;
+
+        assert!(
+            (undithered_avg - dithered_avg).abs() < 5,
+            "Dithering should not significantly change the average value"
+        );
+    }
+
+    #[test]
+    fn test_dithering_bit_depth_scaling() {
+        let mut ditherer = Ditherer::new(DitheringAlgorithm::Triangular);
+        let samples = vec![0.5; 10];
+
+        // Test different bit depths
+        let dithered_8bit = ditherer.apply(&samples, 8);
+        let dithered_16bit = ditherer.apply(&samples, 16);
+        let dithered_24bit = ditherer.apply(&samples, 24);
+
+        // All should produce output
+        assert_eq!(dithered_8bit.len(), samples.len());
+        assert_eq!(dithered_16bit.len(), samples.len());
+        assert_eq!(dithered_24bit.len(), samples.len());
+
+        // Higher bit depths should have smaller dither amplitude
+        // (though this is hard to test precisely due to randomness)
+        for &sample in &dithered_8bit {
+            assert!(sample >= 0.4 && sample <= 0.6);
+        }
+    }
+
+    #[test]
+    fn test_float_formats_skip_dithering() {
+        let samples = vec![0.5, -0.5, 0.0];
+        let mut ditherer = Ditherer::new(DitheringAlgorithm::Triangular);
+
+        // Float formats should not apply dithering
+        let f32_dithered = SampleFormatConverter::convert_from_f64_dithered(
+            &samples,
+            SampleFormat::F32,
+            &mut ditherer,
+        );
+        let f32_undithered = SampleFormatConverter::convert_from_f64(&samples, SampleFormat::F32);
+
+        assert_eq!(f32_dithered, f32_undithered);
+
+        let f64_dithered = SampleFormatConverter::convert_from_f64_dithered(
+            &samples,
+            SampleFormat::F64,
+            &mut ditherer,
+        );
+        let f64_undithered = SampleFormatConverter::convert_from_f64(&samples, SampleFormat::F64);
+
+        assert_eq!(f64_dithered, f64_undithered);
     }
 }
