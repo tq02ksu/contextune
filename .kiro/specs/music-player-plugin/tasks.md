@@ -267,18 +267,18 @@
 ## Phase 4: Playlist Management
 
 ### 4.1 Playlist Manager in Rust
-- [ ] 4.1.1 Design Playlist data structure
-- [ ] 4.1.2 Implement playlist CRUD operations
-- [ ] 4.1.3 Add track ordering logic
-- [ ] 4.1.4 Implement shuffle algorithm
-- [ ] 4.1.5 Write playlist manager tests
+- [x] 4.1.1 Design Playlist data structure
+- [x] 4.1.2 Implement playlist CRUD operations
+- [x] 4.1.3 Add track ordering logic
+- [x] 4.1.4 Implement shuffle algorithm
+- [x] 4.1.5 Write playlist manager tests
 
 ### 4.2 Playlist CRUD Operations via FFI
-- [ ] 4.2.1 Expose create_playlist via FFI
-- [ ] 4.2.2 Expose get_playlist via FFI
-- [ ] 4.2.3 Expose update_playlist via FFI
-- [ ] 4.2.4 Expose delete_playlist via FFI
-- [ ] 4.2.5 Write FFI playlist tests
+- [x] 4.2.1 Expose create_playlist via FFI
+- [x] 4.2.2 Expose get_playlist via FFI
+- [x] 4.2.3 Expose update_playlist via FFI
+- [x] 4.2.4 Expose delete_playlist via FFI
+- [x] 4.2.5 Write FFI playlist tests
 
 ### 4.3 Playlist UI in Plugin Layer
 - [ ] 4.3.1 Design playlist view component

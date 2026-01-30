@@ -19,6 +19,8 @@ pub enum FFIResult {
     OutOfMemory = -3,
     /// Internal error occurred
     InternalError = -4,
+    /// Resource not found
+    NotFound = -5,
 }
 
 /// FFI-safe audio event type
@@ -154,6 +156,7 @@ mod tests {
         assert_eq!(FFIResult::InvalidArgument as c_int, -2);
         assert_eq!(FFIResult::OutOfMemory as c_int, -3);
         assert_eq!(FFIResult::InternalError as c_int, -4);
+        assert_eq!(FFIResult::NotFound as c_int, -5);
     }
 
     #[test]
