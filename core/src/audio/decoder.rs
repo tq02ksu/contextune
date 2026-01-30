@@ -5,6 +5,7 @@
 use crate::Result;
 use crate::audio::format::AudioFormat;
 use crate::audio::buffer::AudioBuffer;
+use crate::audio::ring_buffer::{RingBufferProducer, RingBufferConsumer, RingBufferConfig, AudioRingBuffer};
 use std::path::Path;
 use std::fs::File;
 use std::sync::{Arc, Mutex};
@@ -48,6 +49,16 @@ pub struct AudioStreamReader {
     decoder: Arc<Mutex<AudioDecoder>>,
     /// Channel for receiving decoded packets
     packet_receiver: mpsc::Receiver<Result<Option<DecodedPacket>>>,
+    /// Handle to the decoding thread
+    decode_thread: Option<thread::JoinHandle<()>>,
+    /// Flag to stop the decoding thread
+    stop_flag: Arc<Mutex<bool>>,
+}
+
+/// Audio stream reader with ring buffer output
+pub struct AudioStreamReaderWithRingBuffer {
+    /// The decoder
+    decoder: Arc<Mutex<AudioDecoder>>,
     /// Handle to the decoding thread
     decode_thread: Option<thread::JoinHandle<()>>,
     /// Flag to stop the decoding thread
@@ -448,6 +459,152 @@ impl Drop for AudioStreamReader {
     }
 }
 
+impl AudioStreamReaderWithRingBuffer {
+    /// Create a new audio stream reader with ring buffer output
+    pub fn new<P: AsRef<Path>>(path: P, config: StreamConfig) -> Result<(Self, RingBufferConsumer)> {
+        let decoder = Arc::new(Mutex::new(AudioDecoder::new(&path)?));
+        let stop_flag = Arc::new(Mutex::new(false));
+        
+        // Get audio format from decoder
+        let audio_format = {
+            let decoder_guard = decoder.lock().unwrap();
+            decoder_guard.format().clone()
+        };
+        
+        // Create ring buffer with appropriate configuration
+        let ring_buffer_config = RingBufferConfig {
+            buffer_duration_seconds: config.buffer_size as f64 / audio_format.sample_rate as f64 * 4.0, // 4x buffer size
+            format: audio_format,
+            allow_overwrite: false,
+        };
+        
+        let (producer, consumer) = AudioRingBuffer::new(ring_buffer_config)
+            .map_err(|e| crate::Error::AudioEngine(format!("Failed to create ring buffer: {}", e)))?;
+        
+        // Clone references for the thread
+        let decoder_clone = decoder.clone();
+        let stop_flag_clone = stop_flag.clone();
+        
+        // Start the decoding thread
+        let decode_thread = thread::spawn(move || {
+            Self::decode_to_ring_buffer_loop(decoder_clone, producer, stop_flag_clone, config);
+        });
+        
+        let reader = Self {
+            decoder,
+            decode_thread: Some(decode_thread),
+            stop_flag,
+        };
+        
+        Ok((reader, consumer))
+    }
+    
+    /// Get the audio format
+    pub fn format(&self) -> Result<AudioFormat> {
+        let decoder = self.decoder.lock().unwrap();
+        Ok(decoder.format().clone())
+    }
+    
+    /// Get the duration in samples (if known)
+    pub fn duration(&self) -> Result<Option<u64>> {
+        let decoder = self.decoder.lock().unwrap();
+        Ok(decoder.duration())
+    }
+    
+    /// Seek to a specific position
+    pub fn seek(&mut self, position: u64) -> Result<()> {
+        let mut decoder = self.decoder.lock().unwrap();
+        decoder.seek(position)
+    }
+    
+    /// Stop the stream reader
+    pub fn stop(&mut self) {
+        // Set stop flag
+        *self.stop_flag.lock().unwrap() = true;
+        
+        // Wait for thread to finish
+        if let Some(handle) = self.decode_thread.take() {
+            let _ = handle.join();
+        }
+    }
+    
+    /// Check if the stream is still active
+    pub fn is_active(&self) -> bool {
+        !*self.stop_flag.lock().unwrap()
+    }
+    
+    /// Decoding loop that writes directly to ring buffer
+    fn decode_to_ring_buffer_loop(
+        decoder: Arc<Mutex<AudioDecoder>>,
+        producer: RingBufferProducer,
+        stop_flag: Arc<Mutex<bool>>,
+        config: StreamConfig,
+    ) {
+        let mut eof_reached = false;
+        
+        loop {
+            // Check stop flag
+            if *stop_flag.lock().unwrap() {
+                break;
+            }
+            
+            // Decode next packet
+            let packet_result = {
+                let mut decoder = decoder.lock().unwrap();
+                decoder.decode_next()
+            };
+            
+            match packet_result {
+                Ok(Some(packet)) => {
+                    // Write samples to ring buffer
+                    let mut samples_written = 0;
+                    let total_samples = packet.samples.len();
+                    
+                    while samples_written < total_samples {
+                        let remaining = &packet.samples[samples_written..];
+                        let written = producer.write(remaining);
+                        
+                        if written == 0 {
+                            // Buffer is full, wait a bit
+                            thread::sleep(std::time::Duration::from_millis(1));
+                        } else {
+                            samples_written += written;
+                        }
+                        
+                        // Check stop flag during writing
+                        if *stop_flag.lock().unwrap() {
+                            return;
+                        }
+                    }
+                }
+                Ok(None) => {
+                    // End of file
+                    if config.loop_playback {
+                        // Reset to beginning for looping
+                        let mut decoder = decoder.lock().unwrap();
+                        if let Err(_) = decoder.reset() {
+                            break;
+                        }
+                    } else {
+                        eof_reached = true;
+                        break;
+                    }
+                }
+                Err(_) => {
+                    // Decoding error, stop
+                    break;
+                }
+            }
+        }
+    }
+}
+
+impl Drop for AudioStreamReaderWithRingBuffer {
+    fn drop(&mut self) {
+        self.stop();
+    }
+}
+
 impl Default for StreamConfig {
     fn default() -> Self {
         Self {
@@ -645,6 +802,32 @@ pub fn create_looping_stream_reader<P: AsRef<Path>>(path: P) -> Result<AudioStre
         ..StreamConfig::default()
     };
     AudioStreamReader::new(path, config)
+}
+
+/// Create a stream reader with ring buffer output
+pub fn create_ring_buffer_stream_reader<P: AsRef<Path>>(
+    path: P
+) -> Result<(AudioStreamReaderWithRingBuffer, RingBufferConsumer)> {
+    AudioStreamReaderWithRingBuffer::new(path, StreamConfig::default())
+}
+
+/// Create a stream reader with ring buffer output and custom configuration
+pub fn create_ring_buffer_stream_reader_with_config<P: AsRef<Path>>(
+    path: P,
+    config: StreamConfig
+) -> Result<(AudioStreamReaderWithRingBuffer, RingBufferConsumer)> {
+    AudioStreamReaderWithRingBuffer::new(path, config)
+}
+
+/// Create a looping stream reader with ring buffer output
+pub fn create_looping_ring_buffer_stream_reader<P: AsRef<Path>>(
+    path: P
+) -> Result<(AudioStreamReaderWithRingBuffer, RingBufferConsumer)> {
+    let config = StreamConfig {
+        loop_playback: true,
+        ..StreamConfig::default()
+    };
+    AudioStreamReaderWithRingBuffer::new(path, config)
 }
 
 #[cfg(test)]
@@ -999,6 +1182,64 @@ mod tests {
             let result = create_stream_reader_with_config(&filename, config);
             assert!(result.is_err(), "Custom stream reader should fail for non-existent {}", format);
         }
+    }
+
+    #[test]
+    fn test_ring_buffer_stream_reader_creation() {
+        // Test with non-existent file
+        let result = create_ring_buffer_stream_reader("nonexistent.mp3");
+        assert!(result.is_err());
+        
+        // Test with invalid file
+        let mut temp_file = NamedTempFile::new().unwrap();
+        temp_file.write_all(b"not an audio file").unwrap();
+        
+        let result = create_ring_buffer_stream_reader(temp_file.path());
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_ring_buffer_stream_reader_with_config() {
+        let config = StreamConfig {
+            buffer_size: 512,
+            loop_playback: true,
+            prefetch_size: 2,
+        };
+        
+        let result = create_ring_buffer_stream_reader_with_config("nonexistent.mp3", config);
+        assert!(result.is_err()); // File doesn't exist, but config should be accepted
+    }
+
+    #[test]
+    fn test_looping_ring_buffer_stream_reader() {
+        let result = create_looping_ring_buffer_stream_reader("nonexistent.mp3");
+        assert!(result.is_err()); // File doesn't exist, but should accept looping config
+    }
+
+    #[test]
+    fn test_ring_buffer_integration() {
+        // Test that ring buffer components work together
+        use crate::audio::ring_buffer::{AudioRingBuffer, RingBufferConfig};
+        use crate::audio::format::{AudioFormat, SampleFormat};
+        
+        let format = AudioFormat::new(44100, 2, SampleFormat::F64);
+        let config = RingBufferConfig {
+            buffer_duration_seconds: 1.0,
+            format: format.clone(),
+            allow_overwrite: false,
+        };
+        
+        let (producer, consumer) = AudioRingBuffer::new(config).unwrap();
+        
+        // Test basic write/read
+        let test_samples = vec![1.0, 2.0, 3.0, 4.0];
+        let written = producer.write(&test_samples);
+        assert_eq!(written, 4);
+        
+        let mut output = vec![0.0; 4];
+        let read = consumer.read(&mut output);
+        assert_eq!(read, 4);
+        assert_eq!(output, test_samples);
     }
 
     #[test]

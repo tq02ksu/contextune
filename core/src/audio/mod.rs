@@ -9,11 +9,13 @@ pub mod engine;
 pub mod format;
 pub mod output;
 pub mod processor;
+pub mod ring_buffer;
 
 pub use engine::{AudioEngine, AudioEngineInterface, PlaybackState, AudioEvent, AudioCallback, AudioDeviceInfo};
 pub use format::{AudioFormat, SampleFormat, ChannelLayout, Channel, FormatError};
 pub use buffer::AudioBuffer;
-pub use decoder::{AudioDecoder, DecodedPacket, AudioFormatInfo};
+pub use decoder::{AudioDecoder, DecodedPacket, AudioFormatInfo, AudioStreamReaderWithRingBuffer};
+pub use ring_buffer::{AudioRingBuffer, RingBufferProducer, RingBufferConsumer, RingBufferConfig};
 
 #[cfg(test)]
 mod tests {

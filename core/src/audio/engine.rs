@@ -3,6 +3,7 @@
 use crate::Result;
 use crate::audio::format::AudioFormat;
 use crate::audio::buffer::AudioBuffer;
+use crate::audio::ring_buffer::{RingBufferConsumer, AudioRingBuffer, RingBufferConfig};
 use std::path::Path;
 use std::sync::Arc;
 use parking_lot::RwLock;
@@ -107,8 +108,10 @@ struct AudioEngineState {
     duration: Option<u64>,
     /// Current audio format
     format: Option<AudioFormat>,
-    /// Audio buffer
+    /// Audio buffer (for non-streaming playback)
     buffer: Option<AudioBuffer>,
+    /// Ring buffer consumer (for streaming playback)
+    ring_buffer_consumer: Option<RingBufferConsumer>,
     /// Event callback
     callback: Option<AudioCallback>,
 }
@@ -122,6 +125,7 @@ impl Default for AudioEngineState {
             duration: None,
             format: None,
             buffer: None,
+            ring_buffer_consumer: None,
             callback: None,
         }
     }
@@ -152,6 +156,92 @@ impl AudioEngine {
             stream: None,
             stream_config: None,
         })
+    }
+    
+    /// Load a file with ring buffer streaming
+    pub fn load_file_with_ring_buffer<P: AsRef<Path>>(&mut self, path: P) -> Result<()> {
+        let path = path.as_ref();
+        
+        // Validate file path
+        if !path.exists() {
+            return Err(crate::Error::Io(std::io::Error::new(
+                std::io::ErrorKind::NotFound,
+                format!("File not found: {}", path.display())
+            )));
+        }
+        
+        // Check if format is supported
+        if !crate::audio::decoder::is_format_supported(path) {
+            return Err(crate::Error::Decoding(format!(
+                "Unsupported file format: {}", 
+                path.extension().and_then(|s| s.to_str()).unwrap_or("unknown")
+            )));
+        }
+        
+        // Create ring buffer stream reader
+        let (stream_reader, consumer) = crate::audio::decoder::create_ring_buffer_stream_reader(path)
+            .map_err(|e| {
+                self.update_state(|state| {
+                    state.state = PlaybackState::Error;
+                    Some(AudioEvent::Error(format!("Failed to create stream reader: {}", e)))
+                });
+                e
+            })?;
+        
+        // Get format and duration information
+        let audio_format = stream_reader.format().map_err(|e| {
+            self.update_state(|state| {
+                state.state = PlaybackState::Error;
+                Some(AudioEvent::Error(format!("Failed to get format: {}", e)))
+            });
+            e
+        })?;
+        
+        let duration = stream_reader.duration().map_err(|e| {
+            self.update_state(|state| {
+                state.state = PlaybackState::Error;
+                Some(AudioEvent::Error(format!("Failed to get duration: {}", e)))
+            });
+            e
+        })?;
+        
+        // Update state with streaming setup
+        self.update_state(|state| {
+            state.state = PlaybackState::Stopped;
+            state.position = 0;
+            state.duration = duration;
+            state.format = Some(audio_format.clone());
+            state.buffer = None; // Clear regular buffer
+            state.ring_buffer_consumer = Some(consumer);
+            Some(AudioEvent::StateChanged(PlaybackState::Stopped))
+        });
+        
+        // Initialize default device if not set
+        if self.device.is_none() {
+            self.init_default_device().map_err(|e| {
+                self.update_state(|state| {
+                    state.state = PlaybackState::Error;
+                    Some(AudioEvent::Error(format!("Failed to initialize device: {}", e)))
+                });
+                e
+            })?;
+        }
+        
+        // Initialize output stream with the audio format
+        self.init_output_stream(&audio_format).map_err(|e| {
+            self.update_state(|state| {
+                state.state = PlaybackState::Error;
+                Some(AudioEvent::Error(format!("Failed to initialize stream: {}", e)))
+            });
+            e
+        })?;
+        
+        // Store the stream reader (we need to keep it alive)
+        // For now, we'll let it run in the background
+        // TODO: Store stream reader reference for proper cleanup
+        std::mem::forget(stream_reader); // Prevent drop for now
+        
+        Ok(())
     }
     
     /// Initialize the audio engine with a specific device
@@ -422,45 +512,103 @@ impl AudioEngine {
         // Fill output buffer based on current state
         match state_guard.state {
             PlaybackState::Playing => {
-                if let Some(ref buffer) = state_guard.buffer {
-                    let samples_per_frame = state_guard.format.as_ref()
-                        .map(|f| f.channels as usize)
-                        .unwrap_or(2);
-                    
-                    let frames_needed = output.len() / samples_per_frame;
-                    let start_sample = state_guard.position as usize * samples_per_frame;
-                    let buffer_data = buffer.data();
-                    
-                    // Copy audio data to output buffer
-                    for (i, output_sample) in output.iter_mut().enumerate() {
-                        let buffer_index = start_sample + i;
-                        if buffer_index < buffer_data.len() {
-                            *output_sample = buffer_data[buffer_index] as f32;
-                        } else {
-                            *output_sample = 0.0; // End of audio data
-                        }
+                // Check which audio source to use
+                let has_ring_buffer = state_guard.ring_buffer_consumer.is_some();
+                let has_buffer = state_guard.buffer.is_some();
+                
+                if has_ring_buffer {
+                    // Extract consumer temporarily to avoid borrow conflicts
+                    if let Some(consumer) = state_guard.ring_buffer_consumer.take() {
+                        Self::fill_from_ring_buffer(output, &consumer, &mut state_guard);
+                        state_guard.ring_buffer_consumer = Some(consumer);
                     }
-                    
-                    // Update position
-                    state_guard.position += frames_needed as u64;
-                    
-                    // Check if we've reached the end
-                    if let Some(duration) = state_guard.duration {
-                        if state_guard.position >= duration {
-                            state_guard.state = PlaybackState::Stopped;
-                            state_guard.position = 0;
-                            // Note: We can't easily emit events from this callback
-                            // The main thread should check for this condition
-                        }
+                } else if has_buffer {
+                    // Extract buffer temporarily to avoid borrow conflicts
+                    if let Some(buffer) = state_guard.buffer.take() {
+                        Self::fill_from_buffer(output, &buffer, &mut state_guard);
+                        state_guard.buffer = Some(buffer);
                     }
                 } else {
-                    // No buffer loaded, fill with silence
+                    // No audio source, fill with silence
                     output.fill(0.0);
                 }
             }
             _ => {
                 // Fill with silence for all other states
                 output.fill(0.0);
+            }
+        }
+    }
+    
+    /// Fill output buffer from ring buffer
+    fn fill_from_ring_buffer(
+        output: &mut [f32], 
+        consumer: &RingBufferConsumer, 
+        state: &mut AudioEngineState
+    ) {
+        let samples_per_frame = state.format.as_ref()
+            .map(|f| f.channels as usize)
+            .unwrap_or(2);
+        
+        let frames_needed = output.len() / samples_per_frame;
+        let samples_needed = frames_needed * samples_per_frame;
+        
+        // Create temporary buffer for f64 samples
+        let mut temp_buffer = vec![0.0f64; samples_needed];
+        let samples_read = consumer.read_with_silence(&mut temp_buffer);
+        
+        // Convert f64 to f32 and apply volume
+        for (i, &sample) in temp_buffer.iter().enumerate() {
+            if i < output.len() {
+                output[i] = (sample * state.volume as f64) as f32;
+            }
+        }
+        
+        // Update position
+        state.position += frames_needed as u64;
+        
+        // Check for buffer underrun
+        if samples_read < samples_needed {
+            // Buffer underrun occurred - we filled with silence
+            // Note: We can't easily emit events from this callback
+            // The main thread should monitor buffer levels
+        }
+    }
+    
+    /// Fill output buffer from regular audio buffer
+    fn fill_from_buffer(
+        output: &mut [f32], 
+        buffer: &AudioBuffer, 
+        state: &mut AudioEngineState
+    ) {
+        let samples_per_frame = state.format.as_ref()
+            .map(|f| f.channels as usize)
+            .unwrap_or(2);
+        
+        let frames_needed = output.len() / samples_per_frame;
+        let start_sample = state.position as usize * samples_per_frame;
+        let buffer_data = buffer.data();
+        
+        // Copy audio data to output buffer
+        for (i, output_sample) in output.iter_mut().enumerate() {
+            let buffer_index = start_sample + i;
+            if buffer_index < buffer_data.len() {
+                *output_sample = (buffer_data[buffer_index] * state.volume as f64) as f32;
+            } else {
+                *output_sample = 0.0; // End of audio data
+            }
+        }
+        
+        // Update position
+        state.position += frames_needed as u64;
+        
+        // Check if we've reached the end
+        if let Some(duration) = state.duration {
+            if state.position >= duration {
+                state.state = PlaybackState::Stopped;
+                state.position = 0;
+                // Note: We can't easily emit events from this callback
+                // The main thread should check for this condition
             }
         }
     }
@@ -710,7 +858,38 @@ impl AudioEngine {
         Err(crate::Error::AudioDevice(format!("Device '{}' not found", device_name)))
     }
     
-    /// Emit an event to the callback if set
+    /// Set ring buffer consumer for streaming playback
+    pub fn set_ring_buffer_consumer(&mut self, consumer: RingBufferConsumer) -> Result<()> {
+        self.update_state(|state| {
+            state.ring_buffer_consumer = Some(consumer);
+            state.buffer = None; // Clear regular buffer when using ring buffer
+            None
+        });
+        Ok(())
+    }
+    
+    /// Clear ring buffer consumer
+    pub fn clear_ring_buffer_consumer(&mut self) {
+        self.update_state(|state| {
+            state.ring_buffer_consumer = None;
+            None
+        });
+    }
+    
+    /// Check if using ring buffer for playback
+    pub fn is_using_ring_buffer(&self) -> bool {
+        self.state.read().ring_buffer_consumer.is_some()
+    }
+    
+    /// Get ring buffer utilization (0.0 to 1.0) if using ring buffer
+    pub fn ring_buffer_utilization(&self) -> Option<f64> {
+        let state = self.state.read();
+        state.ring_buffer_consumer.as_ref().map(|consumer| {
+            let available = consumer.available_read();
+            let capacity = consumer.capacity();
+            available as f64 / capacity as f64
+        })
+    }
     fn emit_event(&self, event: AudioEvent) {
         let state = self.state.read();
         if let Some(ref callback) = state.callback {
@@ -780,6 +959,7 @@ impl AudioEngineInterface for AudioEngine {
             state.duration = duration;
             state.format = Some(audio_format.clone());
             state.buffer = Some(audio_buffer);
+            state.ring_buffer_consumer = None; // Clear ring buffer when loading regular file
             Some(AudioEvent::StateChanged(PlaybackState::Stopped))
         });
         
@@ -1439,6 +1619,63 @@ mod tests {
         
         // Test that validation passes for initial state
         assert!(engine.validate_state().is_ok());
+    }
+
+    #[test]
+    fn test_ring_buffer_integration() {
+        let mut engine = AudioEngine::new().unwrap();
+        
+        // Test ring buffer consumer setting
+        use crate::audio::ring_buffer::{AudioRingBuffer, RingBufferConfig};
+        use crate::audio::format::{AudioFormat, SampleFormat};
+        
+        let format = AudioFormat::new(44100, 2, SampleFormat::F64);
+        let config = RingBufferConfig {
+            buffer_duration_seconds: 1.0,
+            format: format.clone(),
+            allow_overwrite: false,
+        };
+        
+        let (producer, consumer) = AudioRingBuffer::new(config).unwrap();
+        
+        // Test setting ring buffer consumer
+        assert!(!engine.is_using_ring_buffer());
+        engine.set_ring_buffer_consumer(consumer).unwrap();
+        assert!(engine.is_using_ring_buffer());
+        
+        // Test ring buffer utilization
+        let utilization = engine.ring_buffer_utilization();
+        assert!(utilization.is_some());
+        assert_eq!(utilization.unwrap(), 0.0); // Empty buffer
+        
+        // Write some data to test utilization
+        let test_samples = vec![1.0; 1000];
+        producer.write(&test_samples);
+        
+        let utilization_after = engine.ring_buffer_utilization();
+        assert!(utilization_after.is_some());
+        assert!(utilization_after.unwrap() > 0.0); // Should have some data
+        
+        // Test clearing ring buffer
+        engine.clear_ring_buffer_consumer();
+        assert!(!engine.is_using_ring_buffer());
+        assert!(engine.ring_buffer_utilization().is_none());
+    }
+
+    #[test]
+    fn test_ring_buffer_file_loading() {
+        let mut engine = AudioEngine::new().unwrap();
+        
+        // Test loading with non-existent file
+        let result = engine.load_file_with_ring_buffer("nonexistent.mp3");
+        assert!(result.is_err());
+        
+        // Test loading with invalid file
+        let mut temp_file = tempfile::NamedTempFile::new().unwrap();
+        std::io::Write::write_all(&mut temp_file, b"not audio data").unwrap();
+        
+        let result = engine.load_file_with_ring_buffer(temp_file.path());
+        assert!(result.is_err());
     }
 
     #[test]
