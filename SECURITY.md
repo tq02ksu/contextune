@@ -20,7 +20,7 @@ We take security vulnerabilities seriously. If you discover a security vulnerabi
 Instead, please report them via one of the following methods:
 
 1. **Email**: Send details to [security@contextune.dev](mailto:security@contextune.dev)
-2. **GitHub Security Advisories**: Use the [GitHub Security Advisory](https://github.com/your-org/contextune/security/advisories/new) feature
+2. **GitHub Security Advisories**: Use the [GitHub Security Advisory](https://github.com/tq02ksu/contextune/security/advisories/new) feature
 3. **Private Disclosure**: Contact the maintainers directly through secure channels
 
 ### What to Include
@@ -172,7 +172,7 @@ When reporting a vulnerability, please include:
 
 - **Security Team**: [security@contextune.dev](mailto:security@contextune.dev)
 - **GPG Key**: [Download our GPG key](https://contextune.dev/security/gpg-key.asc)
-- **Security Advisories**: [GitHub Security Advisories](https://github.com/your-org/contextune/security/advisories)
+- **Security Advisories**: [GitHub Security Advisories](https://github.com/tq02ksu/contextune/security/advisories)
 
 ## Acknowledgments
 

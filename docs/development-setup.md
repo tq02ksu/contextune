@@ -390,7 +390,7 @@ gradle wrapper --gradle-version 8.0
 ### Clone Repository
 ```bash
 # Clone the repository
-git clone https://github.com/your-org/contextune.git
+git clone https://github.com/tq02ksu/contextune.git
 cd contextune
 
 # Set up Git hooks
@@ -590,7 +590,7 @@ sudo chown -R $(whoami) /usr/local/var/homebrew
 - [Stack Overflow](https://stackoverflow.com/questions/tagged/rust)
 
 #### Project-Specific Help
-- [GitHub Issues](https://github.com/your-org/contextune/issues)
+- [GitHub Issues](https://github.com/tq02ksu/contextune/issues)
 - [Contributing Guidelines](../CONTRIBUTING.md)
 - [Security Policy](../SECURITY.md)
 
