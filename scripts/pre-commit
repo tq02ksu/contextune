@@ -50,18 +50,15 @@ if ! command -v cargo-clippy &> /dev/null; then
     SKIP_CLIPPY=1
 fi
 
-echo "📁 Checking Rust code in core directory..."
-
-# Change to core directory
-cd core
+echo "📁 Checking Rust code in workspace..."
 
 # 1. Format check
 echo "🎨 Checking Rust code formatting..."
-if ! cargo fmt --check; then
-    print_error "Code formatting issues found. Run 'cargo fmt' to fix them."
+if ! cargo fmt --all -- --check; then
+    print_error "Code formatting issues found. Run 'cargo fmt --all' to fix them."
     echo ""
     echo "To automatically format your code:"
-    echo "  cd core && cargo fmt"
+    echo "  cargo fmt --all"
     exit 1
 fi
 print_status "Code formatting is correct"
@@ -73,7 +70,7 @@ if [ -z "$SKIP_CLIPPY" ]; then
         print_error "Clippy found issues. Please fix them before committing."
         echo ""
         echo "To see detailed clippy suggestions:"
-        echo "  cd core && cargo clippy --all-targets --all-features"
+        echo "  cargo clippy --all-targets --all-features"
         exit 1
     fi
     print_status "Clippy checks passed"
@@ -92,7 +89,7 @@ if ! cargo check --all-targets --all-features; then
     echo "  - FFI export issues (check exports.map file exists)"
     echo ""
     echo "For detailed error information, run:"
-    echo "  cd core && cargo check --all-targets --all-features --verbose"
+    echo "  cargo check --all-targets --all-features --verbose"
     exit 1
 fi
 print_status "Code compiles successfully"
@@ -103,13 +100,10 @@ if ! cargo test --lib --bins --tests --quiet; then
     print_error "Some tests are failing. Please fix them before committing."
     echo ""
     echo "To run tests with detailed output:"
-    echo "  cd core && cargo test --lib --bins --tests"
+    echo "  cargo test --lib --bins --tests"
     exit 1
 fi
 print_status "Quick tests passed"
-
-# Return to project root
-cd ..
 
 # 5. Check for common issues in staged files
 echo "📋 Checking staged files..."
@@ -144,10 +138,10 @@ fi
 
 # 6. Check Cargo.toml files for version consistency
 echo "📦 Checking Cargo.toml files..."
-if [ -f "core/Cargo.toml" ]; then
-    # Check if Cargo.toml is properly formatted
-    if ! cargo metadata --manifest-path core/Cargo.toml --format-version 1 > /dev/null 2>&1; then
-        print_error "core/Cargo.toml has syntax errors"
+if [ -f "Cargo.toml" ]; then
+    # Check if workspace Cargo.toml is properly formatted
+    if ! cargo metadata --format-version 1 > /dev/null 2>&1; then
+        print_error "Cargo.toml has syntax errors"
         exit 1
     fi
     print_status "Cargo.toml files are valid"

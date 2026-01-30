@@ -1,31 +1,16 @@
 # Rust formatting configuration for Contexture
+# Only using stable rustfmt features for consistency
 
 # Edition
 edition = "2021"
 
 # Imports
-imports_granularity = "Crate"
-group_imports = "StdExternalCrate"
 reorder_imports = true
 
 # Formatting
 max_width = 100
 hard_tabs = false
 tab_spaces = 4
-
-# Functions
-fn_single_line = false
-where_single_line = false
-
-# Structs and enums
-struct_lit_single_line = false
-enum_discrim_align_threshold = 0
-
-# Comments
-wrap_comments = true
-comment_width = 80
-normalize_comments = true
-normalize_doc_attributes = true
 
 # Misc
 use_small_heuristics = "Default"
