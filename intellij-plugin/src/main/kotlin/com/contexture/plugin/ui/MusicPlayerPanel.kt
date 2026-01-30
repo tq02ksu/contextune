@@ -20,6 +20,8 @@ import javax.swing.*
 class MusicPlayerPanel(private val project: Project) : JBPanel<MusicPlayerPanel>(BorderLayout()) {
     
     private val playbackService = ApplicationManager.getApplication().getService(PlaybackService::class.java)
+    private val errorService = ApplicationManager.getApplication().getService(com.contexture.plugin.services.ErrorNotificationService::class.java)
+    private val playerState = com.contexture.plugin.state.PlayerState.getInstance()
     
     // UI Components - Track Info
     private val trackTitleLabel = JBLabel("No track loaded", SwingConstants.CENTER)
@@ -233,18 +235,32 @@ class MusicPlayerPanel(private val project: Project) : JBPanel<MusicPlayerPanel>
         try {
             playbackService.initialize()
             
-            // Set initial volume
-            val initialVolume = volumeSlider.value / 100.0
-            playbackService.setVolume(initialVolume)
+            // Restore volume from state
+            val savedVolume = playerState.volume
+            if (savedVolume in 0.0..1.0) {
+                volumeSlider.value = (savedVolume * 100).toInt()
+                playbackService.setVolume(savedVolume)
+            } else {
+                // Use slider default
+                val initialVolume = volumeSlider.value / 100.0
+                playbackService.setVolume(initialVolume)
+            }
+            
+            // Restore mute state
+            if (playerState.isMuted) {
+                playbackService.mute()
+                isMuted = true
+                muteButton.text = "Unmute"
+                volumeLabel.text = "Volume: Muted"
+            }
             
             updateStatus("Ready")
         } catch (e: Exception) {
             updateStatus("Error: ${e.message}")
-            JOptionPane.showMessageDialog(
-                this,
-                "Failed to initialize audio engine: ${e.message}",
+            errorService.showError(
                 "Initialization Error",
-                JOptionPane.ERROR_MESSAGE
+                "Failed to initialize audio engine: ${e.message}",
+                project
             )
         }
     }
@@ -489,10 +505,22 @@ class MusicPlayerPanel(private val project: Project) : JBPanel<MusicPlayerPanel>
      */
     fun dispose() {
         updateTimer.stop()
+        
+        // Save current state
+        try {
+            playerState.volume = playbackService.getVolume()
+            playerState.isMuted = playbackService.isMuted()
+            playerState.lastFilePath = playbackService.getCurrentFile() ?: ""
+            playerState.lastPosition = playbackService.getPosition()
+        } catch (e: Exception) {
+            errorService.logError("Failed to save player state", e)
+        }
+        
+        // Shutdown service
         try {
             playbackService.shutdown()
         } catch (e: Exception) {
-            // Ignore errors during shutdown
+            errorService.logError("Error during shutdown", e)
         }
     }
 }

@@ -6,4 +6,4 @@ pub mod manager;
 pub mod queue;
 pub mod smart;
 
-// Will be implemented in Phase 4
+pub use manager::{Playlist, PlaylistManager, Track};

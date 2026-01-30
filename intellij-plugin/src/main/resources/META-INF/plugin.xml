@@ -55,6 +55,15 @@
                 serviceImplementation="com.contexture.plugin.services.PlaylistService"/>
         <applicationService
                 serviceImplementation="com.contexture.plugin.services.LibraryService"/>
+        <applicationService
+                serviceImplementation="com.contexture.plugin.services.ErrorNotificationService"/>
+        <applicationService
+                serviceImplementation="com.contexture.plugin.state.PlayerState"/>
+        
+        <!-- Notification Group -->
+        <notificationGroup id="Contexture Music Player"
+                          displayType="BALLOON"
+                          isLogByDefault="true"/>
         
         <!-- Startup Activity -->
         <postStartupActivity implementation="com.contexture.plugin.MusicPlayerPlugin"/>

@@ -244,25 +244,25 @@
 - [x] 3.5.6 Write keyboard shortcut tests
 
 ### 3.6 Plugin Lifecycle Management
-- [ ] 3.6.1 Implement plugin initialization
-- [ ] 3.6.2 Implement plugin shutdown
-- [ ] 3.6.3 Handle IDE restart
-- [ ] 3.6.4 Implement resource cleanup
-- [ ] 3.6.5 Write lifecycle tests
+- [x] 3.6.1 Implement plugin initialization
+- [x] 3.6.2 Implement plugin shutdown
+- [x] 3.6.3 Handle IDE restart
+- [x] 3.6.4 Implement resource cleanup
+- [x] 3.6.5 Write lifecycle tests
 
 ### 3.7 State Persistence
-- [ ] 3.7.1 Implement state serialization
-- [ ] 3.7.2 Save playback state on shutdown
-- [ ] 3.7.3 Restore state on startup
-- [ ] 3.7.4 Persist volume and playlist
-- [ ] 3.7.5 Write persistence tests
+- [x] 3.7.1 Implement state serialization
+- [x] 3.7.2 Save playback state on shutdown
+- [x] 3.7.3 Restore state on startup
+- [x] 3.7.4 Persist volume and playlist
+- [x] 3.7.5 Write persistence tests
 
 ### 3.8 Plugin Error Handling
-- [ ] 3.8.1 Implement error notification UI
-- [ ] 3.8.2 Handle Rust core errors gracefully
-- [ ] 3.8.3 Add error logging
-- [ ] 3.8.4 Implement fallback behaviors
-- [ ] 3.8.5 Write error handling tests
+- [x] 3.8.1 Implement error notification UI
+- [x] 3.8.2 Handle Rust core errors gracefully
+- [x] 3.8.3 Add error logging
+- [x] 3.8.4 Implement fallback behaviors
+- [x] 3.8.5 Write error handling tests
 
 ## Phase 4: Playlist Management
 
