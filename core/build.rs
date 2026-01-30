@@ -13,6 +13,7 @@ fn main() {
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-changed=src/");
     println!("cargo:rerun-if-changed=Cargo.toml");
+    println!("cargo:rerun-if-changed=exports.map");
 
     // Configure platform-specific settings
     configure_platform_specific(&target);
@@ -104,7 +105,14 @@ fn configure_linux() {
 
     // Export symbols for shared library
     println!("cargo:rustc-link-arg=-Wl,--export-dynamic");
-    println!("cargo:rustc-link-arg=-Wl,--version-script=exports.map");
+
+    // Use absolute path for exports.map
+    let manifest_dir = env::var("CARGO_MANIFEST_DIR").unwrap();
+    let exports_map_path = PathBuf::from(manifest_dir).join("exports.map");
+    println!(
+        "cargo:rustc-link-arg=-Wl,--version-script={}",
+        exports_map_path.display()
+    );
 }
 
 /// Configure FFI exports based on target and profile

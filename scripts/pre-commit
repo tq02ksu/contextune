@@ -85,6 +85,14 @@ fi
 echo "🔨 Checking if code compiles..."
 if ! cargo check --all-targets --all-features; then
     print_error "Code does not compile. Please fix compilation errors."
+    echo ""
+    echo "Common issues:"
+    echo "  - Missing dependencies or system libraries"
+    echo "  - Platform-specific build configuration problems"
+    echo "  - FFI export issues (check exports.map file exists)"
+    echo ""
+    echo "For detailed error information, run:"
+    echo "  cd core && cargo check --all-targets --all-features --verbose"
     exit 1
 fi
 print_status "Code compiles successfully"
