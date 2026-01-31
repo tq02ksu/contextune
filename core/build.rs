@@ -134,29 +134,32 @@ fn configure_ffi_exports(target: &str, profile: &str) {
         println!("cargo:rustc-cfg=linux_so");
     }
 
-    // JNI configuration for Java integration
-    configure_jni(target);
+    // JNA configuration for Java integration
+    configure_jna(target);
 }
 
-/// Configure JNI (Java Native Interface) settings
-fn configure_jni(target: &str) {
-    // Try to find Java installation
-    if let Ok(java_home) = env::var("JAVA_HOME") {
-        let java_home = PathBuf::from(java_home);
+/// Configure JNA (Java Native Access) settings
+fn configure_jna(target: &str) {
+    // JNA doesn't require Java runtime linking like JNI
+    // We just need to ensure proper C-style function exports
 
-        if target.contains("windows") {
-            println!("cargo:rustc-link-search={}/lib", java_home.display());
-            println!("cargo:rustc-link-lib=jvm");
-        } else {
-            // macOS and Linux use the same path
-            println!("cargo:rustc-link-search={}/lib/server", java_home.display());
-            println!("cargo:rustc-link-lib=jvm");
-        }
+    // Enable JNA support flag
+    println!("cargo:rustc-cfg=feature=\"jna\"");
 
-        println!("cargo:rustc-cfg=feature=\"jni\"");
-    } else {
-        println!("cargo:warning=JAVA_HOME not set, JNI support disabled");
+    // Platform-specific library naming for JNA
+    if target.contains("windows") {
+        // Windows: .dll
+        println!("cargo:rustc-cfg=jna_windows");
+    } else if target.contains("apple") {
+        // macOS: .dylib
+        println!("cargo:rustc-cfg=jna_macos");
+    } else if target.contains("linux") {
+        // Linux: .so
+        println!("cargo:rustc-cfg=jna_linux");
     }
+
+    // JNA requires C-style exports, which we handle in the FFI module
+    println!("cargo:rustc-cfg=c_exports");
 }
 
 /// Configure audio library dependencies

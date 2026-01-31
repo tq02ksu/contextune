@@ -20,9 +20,6 @@ dasp = "0.11"
 # CUE file parsing
 nom = "8.0"
 
-# FFI
-jni = "0.21"
-
 # Async runtime
 tokio = { version = "1", features = ["full"] }
 crossbeam = "0.8"

@@ -11,6 +11,9 @@ description = "High-fidelity music player core with AI-powered features"
 crate-type = ["cdylib", "staticlib", "rlib"]
 name = "contextune_core"
 
+[features]
+default = []
+
 [dependencies]
 # Audio processing
 symphonia.workspace = true
@@ -20,9 +23,6 @@ dasp.workspace = true
 
 # CUE file parsing
 nom.workspace = true
-
-# FFI
-jni.workspace = true
 
 # Async runtime
 tokio.workspace = true

@@ -1,9 +1,8 @@
 //! FFI (Foreign Function Interface) module
 //!
-//! Provides C-compatible interface for Java/Kotlin integration
+//! Provides C-compatible interface for JNA integration
 
 pub mod c_api;
-pub mod jni;
 pub mod playlist_api;
 pub mod types;
 
