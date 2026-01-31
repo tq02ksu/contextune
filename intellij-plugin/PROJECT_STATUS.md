@@ -172,12 +172,12 @@ intellij-plugin/
 - ✅ 3.1.4 Configure plugin dependencies
 - ✅ 3.1.5 Set up development environment
 
-### Phase 3.2 - JNI Bridge to Rust Core
-- ✅ 3.2.1 Create Kotlin JNI wrapper classes
+### Phase 3.2 - JNA Bridge to Rust Core
+- ✅ 3.2.1 Create Kotlin JNA wrapper classes
 - ✅ 3.2.2 Implement native library loading
 - ✅ 3.2.3 Handle platform-specific library paths
 - ✅ 3.2.4 Implement error handling for FFI calls
-- ✅ 3.2.5 Write JNI bridge tests
+- ✅ 3.2.5 Write JNA bridge tests
 
 ### Phase 3.3 - Basic UI with Playback Controls
 - ✅ 3.3.1 Design main player UI layout

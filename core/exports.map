@@ -2,16 +2,22 @@
   global:
     audio_engine_create;
     audio_engine_destroy;
+    audio_engine_load_file;
     audio_engine_play;
     audio_engine_pause;
     audio_engine_stop;
     audio_engine_seek;
     audio_engine_set_volume;
-    audio_engine_load_file;
-    audio_engine_get_state;
+    audio_engine_set_volume_ramped;
+    audio_engine_get_volume;
+    audio_engine_mute;
+    audio_engine_unmute;
+    audio_engine_is_muted;
     audio_engine_get_position;
     audio_engine_get_duration;
+    audio_engine_is_playing;
     audio_engine_set_callback;
+    audio_engine_clear_callback;
   local:
     *;
 };

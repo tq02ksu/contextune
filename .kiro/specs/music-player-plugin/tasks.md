@@ -100,7 +100,7 @@
 - [x] 1.5.4 Add dithering for output conversion
 - [x] 1.5.5 Write tests for precision preservation
 
-### 1.6 JNI Wrapper for Java Integration
+### 1.6 JNA Wrapper for Java Integration
 - [x] 1.6.1 Define C-compatible FFI interface
 - [x] 1.6.2 Implement audio_engine_create/destroy
 - [x] 1.6.3 Implement audio_engine_load/play/pause/stop
@@ -212,12 +212,12 @@
 - [x] 3.1.4 Configure plugin dependencies
 - [x] 3.1.5 Set up development environment
 
-### 3.2 JNI Bridge to Rust Core
-- [x] 3.2.1 Create Kotlin JNI wrapper classes
+### 3.2 JNA Bridge to Rust Core
+- [x] 3.2.1 Create Kotlin JNA wrapper classes
 - [x] 3.2.2 Implement native library loading
 - [x] 3.2.3 Handle platform-specific library paths
 - [x] 3.2.4 Implement error handling for FFI calls
-- [x] 3.2.5 Write JNI bridge tests
+- [x] 3.2.5 Write JNA bridge tests
 
 ### 3.3 Basic UI with Playback Controls
 - [x] 3.3.1 Design main player UI layout
