@@ -106,13 +106,8 @@ fn configure_linux() {
     // Export symbols for shared library
     println!("cargo:rustc-link-arg=-Wl,--export-dynamic");
 
-    // Use absolute path for exports.map
-    let manifest_dir = env::var("CARGO_MANIFEST_DIR").unwrap();
-    let exports_map_path = PathBuf::from(manifest_dir).join("exports.map");
-    println!(
-        "cargo:rustc-link-arg=-Wl,--version-script={}",
-        exports_map_path.display()
-    );
+    // Note: We don't use version scripts as they can cause issues with tests
+    // and the symbols are already properly exported via #[no_mangle] extern "C"
 }
 
 /// Configure FFI exports based on target and profile
