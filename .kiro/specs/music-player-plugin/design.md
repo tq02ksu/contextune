@@ -16,7 +16,7 @@ graph TB
         LC[Lifecycle Manager]
     end
     
-    FFI[JNI/FFI Bridge]
+    FFI[JNA/FFI Bridge]
     
     subgraph RUST["Rust Audio Core (Native Library)"]
         PC[Playback Controller]
@@ -159,7 +159,6 @@ contextune/
 │   │   ├── ffi/                 # FFI interface
 │   │   │   ├── mod.rs
 │   │   │   ├── c_api.rs         # C-compatible API
-│   │   │   ├── jni.rs           # JNI bindings
 │   │   │   └── types.rs         # FFI type conversions
 │   │   │
 │   │   ├── state/               # State management
@@ -195,7 +194,7 @@ contextune/
 │   │   │   │       ├── MusicPlayerPlugin.kt      # Plugin entry point
 │   │   │   │       │
 │   │   │   │       ├── audio/                    # Audio integration
-│   │   │   │       │   ├── RustAudioEngine.kt    # JNI wrapper
+│   │   │   │       │   ├── RustAudioEngine.kt    # JNA wrapper
 │   │   │   │       │   ├── PlaybackController.kt
 │   │   │   │       │   └── AudioState.kt
 │   │   │   │       │
@@ -306,7 +305,6 @@ contextune/
 
 **`ffi/`** - Foreign Function Interface
 - `c_api.rs`: C-compatible API definitions, memory safety
-- `jni.rs`: JNI bindings for Java/Kotlin integration
 - `types.rs`: Type conversions between Rust and C/Java
 
 **`state/`** - State Management
@@ -316,7 +314,7 @@ contextune/
 #### Plugin Modules (Kotlin)
 
 **`audio/`** - Audio Integration
-- `RustAudioEngine.kt`: JNI wrapper for Rust audio core
+- `RustAudioEngine.kt`: JNA wrapper for Rust audio core
 - `PlaybackController.kt`: High-level playback control
 - `AudioState.kt`: Audio state management
 
@@ -399,7 +397,7 @@ contextune/
 
 **Implementation**: 
 - Rust library compiled as native shared library (.so/.dylib/.dll)
-- JNI/FFI bridge for communication between Java and Rust
+- JNA/FFI bridge for communication between Java and Rust
 - Plugin layer handles UI and IDE integration
 - Rust core handles all audio processing
 
@@ -901,7 +899,7 @@ pub extern "C" fn audio_engine_set_state_callback(
 ) -> i32;
 ```
 
-### Java/Kotlin JNI Wrapper
+### Java/Kotlin JNA Wrapper
 
 ```kotlin
 class RustAudioEngine {
@@ -1330,7 +1328,7 @@ When a recommendation is made, rich contextual information is displayed:
 3. Integrate `symphonia` for format decoding (MP3, WAV initially)
 4. Build zero-copy ring buffer for audio streaming
 5. Implement 64-bit float processing pipeline
-6. Create JNI wrapper for Java integration
+6. Create JNA wrapper for Java integration
 7. Add basic playback controls (play, pause, stop)
 8. Implement volume control with hardware support
 
@@ -1349,7 +1347,7 @@ When a recommendation is made, rich contextual information is displayed:
 
 ### Phase 3: IDE Plugin Integration
 1. Create IntelliJ IDEA plugin project
-2. Build JNI bridge to Rust core
+2. Build JNA bridge to Rust core
 3. Implement basic UI with playback controls
 4. Add progress bar and track information display
 5. Implement keyboard shortcuts
@@ -1440,7 +1438,7 @@ When a recommendation is made, rich contextual information is displayed:
 - Achieve >85% code coverage for audio core
 
 **Plugin Layer Testing**:
-- Test JNI bridge with mock Rust library
+- Test JNA bridge with mock Rust library
 - Verify UI component behavior
 - Test state persistence and restoration
 - Mock dependencies for focused testing
@@ -1831,7 +1829,7 @@ jobs:
       - name: Run FFI Tests
         run: cargo test --test ffi_integration
       
-      - name: Test JNI Bindings
+      - name: Test JNA Bindings
         run: |
           cd plugin
           ./gradlew test --tests "*FFI*"
@@ -2269,7 +2267,6 @@ All CI/CD workflows are documented in:
 - `nom` or `pest` - Parser combinator for CUE file parsing
 
 **FFI & Integration**:
-- `jni` - Java Native Interface bindings for Rust
 - `cbindgen` - Generate C headers from Rust code
 
 **Data & Storage**:
@@ -2284,7 +2281,7 @@ All CI/CD workflows are documented in:
 
 **IDE Integration**:
 - IntelliJ Platform SDK (Java)
-- JNI for Rust-Java communication
+- JNA for Rust-Java communication
 
 **AI/ML**:
 - `tract` or `burn` - ML inference in Rust
@@ -2320,7 +2317,7 @@ dasp = "0.11"
 nom = "7.1"
 
 # FFI
-jni = "0.21"
+# No longer needed - using JNA instead of JNI
 
 # Async runtime
 tokio = { version = "1", features = ["full"] }
