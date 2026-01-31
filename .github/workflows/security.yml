@@ -40,7 +40,7 @@ jobs:
         run: cargo install cargo-audit --locked
       
       - name: Update advisory database
-        run: cargo audit --update
+        run: cargo audit fetch
       
       - name: Run comprehensive security audit
         run: |
