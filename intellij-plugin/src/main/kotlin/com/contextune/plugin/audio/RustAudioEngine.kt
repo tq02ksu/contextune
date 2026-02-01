@@ -15,7 +15,7 @@ interface RustAudioEngineLib : Library {
     companion object {
         private var _instance: RustAudioEngineLib? = null
         private var _loadAttempted = false
-        private var _loadException: Exception? = null
+        private var _loadException: Throwable? = null
         
         /**
          * Get the library instance, or null if loading failed
@@ -25,12 +25,20 @@ interface RustAudioEngineLib : Library {
                 synchronized(this) {
                     if (!_loadAttempted) {
                         try {
-                            // Ensure native library is loaded
-                            NativeLibraryLoader.loadNativeLibrary()
+                            // Configure JNA library path before attempting to load
+                            NativeLibraryLoader.configureJNALibraryPath()
+                            
+                            // Now JNA should be able to find the library
                             _instance = Native.load("contextune_core", RustAudioEngineLib::class.java) as RustAudioEngineLib
-                        } catch (e: Exception) {
+                            println("DEBUG: Successfully loaded JNA library interface")
+                        } catch (e: Throwable) {
                             _loadException = e
                             _instance = null
+                            
+                            // Provide detailed error information
+                            val diagnosticInfo = NativeLibraryLoader.getDiagnosticInfo()
+                            println("DEBUG: Failed to load JNA library interface: ${e.message}")
+                            println("DEBUG: Diagnostic info: $diagnosticInfo")
                         } finally {
                             _loadAttempted = true
                         }
@@ -43,7 +51,7 @@ interface RustAudioEngineLib : Library {
         /**
          * Get the exception that occurred during loading, if any
          */
-        fun getLoadException(): Exception? = _loadException
+        fun getLoadException(): Throwable? = _loadException
         
         /**
          * Check if the library was loaded successfully
