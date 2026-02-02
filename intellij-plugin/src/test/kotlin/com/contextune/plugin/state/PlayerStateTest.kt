@@ -1,22 +1,17 @@
 package com.contextune.plugin.state
 
-import org.junit.jupiter.api.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertNotNull
+import com.intellij.testFramework.fixtures.BasePlatformTestCase
 
 /**
  * Tests for PlayerState persistence
  */
-class PlayerStateTest {
+class PlayerStateTest : BasePlatformTestCase() {
     
-    @Test
     fun `test state creation`() {
         val state = PlayerState()
         assertNotNull(state)
     }
     
-    @Test
     fun `test default values`() {
         val state = PlayerState()
         
@@ -27,7 +22,6 @@ class PlayerStateTest {
         assertFalse(state.toolWindowVisible)
     }
     
-    @Test
     fun `test state modification`() {
         val state = PlayerState()
         
@@ -42,7 +36,6 @@ class PlayerStateTest {
         assertEquals(true, state.isMuted)
     }
     
-    @Test
     fun `test state serialization`() {
         val state1 = PlayerState()
         state1.lastFilePath = "/test/file.mp3"

@@ -1,32 +1,25 @@
 package com.contextune.plugin.ui
 
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
-import org.junit.jupiter.api.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
 
 /**
  * Tests for MusicPlayerPanel UI components
  */
 class MusicPlayerPanelTest : BasePlatformTestCase() {
 
-    @Test
     fun `test panel creation`() {
         val panel = MusicPlayerPanel(project)
         assertNotNull(panel)
     }
 
-    @Test
     fun `test panel has playback controls`() {
         val panel = MusicPlayerPanel(project)
 
         // Check that panel contains components
         val components = panel.components
-        assertTrue(components.isNotEmpty(), "Panel should have components")
+        assertTrue("Panel should have components", components.isNotEmpty())
     }
 
-    @Test
     fun `test panel cleanup`() {
         val panel = MusicPlayerPanel(project)
 
@@ -34,7 +27,6 @@ class MusicPlayerPanelTest : BasePlatformTestCase() {
         panel.dispose()
     }
 
-    @Test
     fun `test track metadata update`() {
         val panel = MusicPlayerPanel(project)
 
@@ -44,7 +36,6 @@ class MusicPlayerPanelTest : BasePlatformTestCase() {
         // Should not throw exception
     }
 
-    @Test
     fun `test format time`() {
         val panel = MusicPlayerPanel(project)
 

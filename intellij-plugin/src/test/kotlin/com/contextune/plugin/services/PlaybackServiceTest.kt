@@ -1,66 +1,60 @@
 package com.contextune.plugin.services
 
 import com.contextune.plugin.audio.AudioEngineException
-import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertNull
-import kotlin.test.assertTrue
+import com.intellij.testFramework.fixtures.BasePlatformTestCase
 
 /**
  * Tests for PlaybackService
  */
-class PlaybackServiceTest {
+class PlaybackServiceTest : BasePlatformTestCase() {
     
     private lateinit var service: PlaybackService
     
-    @BeforeEach
-    fun setUp() {
+    override fun setUp() {
+        super.setUp()
         service = PlaybackService()
         service.initialize()
     }
     
-    @AfterEach
-    fun tearDown() {
+    override fun tearDown() {
         service.shutdown()
+        super.tearDown()
     }
     
-    @Test
     fun `test service initialization`() {
         // Service should be initialized in setUp
         // No exception means success
     }
     
-    @Test
     fun `test volume control`() {
         service.setVolume(0.5)
         val volume = service.getVolume()
-        assertTrue(volume >= 0.45 && volume <= 0.55, "Volume should be approximately 0.5")
+        assertTrue("Volume should be approximately 0.5", volume in 0.45..0.55)
     }
     
-    @Test
     fun `test volume validation`() {
-        assertThrows<IllegalArgumentException> {
+        try {
             service.setVolume(-0.1)
+            fail("Expected IllegalArgumentException")
+        } catch (e: IllegalArgumentException) {
+            // Expected
         }
         
-        assertThrows<IllegalArgumentException> {
+        try {
             service.setVolume(1.1)
+            fail("Expected IllegalArgumentException")
+        } catch (e: IllegalArgumentException) {
+            // Expected
         }
     }
     
-    @Test
     fun `test volume ramping`() {
         service.setVolumeRamped(0.8, 100)
         Thread.sleep(150)
         val volume = service.getVolume()
-        assertTrue(volume >= 0.75 && volume <= 0.85, "Volume should be approximately 0.8")
+        assertTrue("Volume should be approximately 0.8", volume in 0.75..0.85)
     }
     
-    @Test
     fun `test mute and unmute`() {
         service.setVolume(0.75)
         assertFalse(service.isMuted())
@@ -74,21 +68,21 @@ class PlaybackServiceTest {
         assertEquals(0.75, service.getVolume(), 0.01)
     }
     
-    @Test
     fun `test initial playback state`() {
         assertFalse(service.isPlaying())
         assertEquals(0.0, service.getPosition(), 0.01)
         assertNull(service.getCurrentFile())
     }
     
-    @Test
     fun `test load invalid file`() {
-        assertThrows<AudioEngineException> {
+        try {
             service.loadFile("/nonexistent/file.mp3")
+            fail("Expected AudioEngineException")
+        } catch (e: AudioEngineException) {
+            // Expected
         }
     }
     
-    @Test
     fun `test playback controls without loaded file`() {
         // These should not crash
         try {
@@ -100,7 +94,6 @@ class PlaybackServiceTest {
         }
     }
     
-    @Test
     fun `test seek without loaded file`() {
         // Should not crash
         try {
@@ -110,30 +103,36 @@ class PlaybackServiceTest {
         }
     }
     
-    @Test
     fun `test operations without initialization throw exception`() {
         val uninitializedService = PlaybackService()
         
-        assertThrows<IllegalStateException> {
+        try {
             uninitializedService.play()
+            fail("Expected IllegalStateException")
+        } catch (e: IllegalStateException) {
+            // Expected
         }
         
-        assertThrows<IllegalStateException> {
+        try {
             uninitializedService.setVolume(0.5)
+            fail("Expected IllegalStateException")
+        } catch (e: IllegalStateException) {
+            // Expected
         }
         
-        assertThrows<IllegalStateException> {
+        try {
             uninitializedService.getVolume()
+            fail("Expected IllegalStateException")
+        } catch (e: IllegalStateException) {
+            // Expected
         }
     }
     
-    @Test
     fun `test get duration without loaded file`() {
         val duration = service.getDuration()
         assertEquals(0.0, duration, 0.01)
     }
     
-    @Test
     fun `test shutdown and reinitialize`() {
         service.setVolume(0.5)
         service.shutdown()
@@ -146,7 +145,6 @@ class PlaybackServiceTest {
         assertTrue(volume >= 0.0 && volume <= 1.0)
     }
     
-    @Test
     fun `test multiple shutdown calls are safe`() {
         service.shutdown()
         service.shutdown()
@@ -154,7 +152,6 @@ class PlaybackServiceTest {
         // Should not crash
     }
     
-    @Test
     fun `test multiple initialize calls are safe`() {
         service.initialize()
         service.initialize()

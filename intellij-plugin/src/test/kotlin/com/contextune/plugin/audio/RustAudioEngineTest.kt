@@ -1,51 +1,44 @@
 package com.contextune.plugin.audio
 
-import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
+import com.intellij.testFramework.fixtures.BasePlatformTestCase
 
 /**
  * Tests for RustAudioEngine JNA wrapper
  */
-class RustAudioEngineTest {
+class RustAudioEngineTest : BasePlatformTestCase() {
     
     private lateinit var engine: AudioEngine
     
-    @BeforeEach
-    fun setUp() {
+    override fun setUp() {
+        super.setUp()
         engine = AudioEngine()
         engine.initialize()
     }
     
-    @AfterEach
-    fun tearDown() {
+    override fun tearDown() {
         engine.shutdown()
+        super.tearDown()
     }
     
-    @Test
     fun `test engine initialization`() {
         // Engine should be initialized in setUp
         // No exception means success
     }
     
-    @Test
     fun `test double initialization throws exception`() {
-        assertThrows<IllegalStateException> {
+        try {
             engine.initialize()
+            fail("Expected IllegalStateException")
+        } catch (e: IllegalStateException) {
+            // Expected
         }
     }
     
-    @Test
     fun `test volume control`() {
         // Set volume to 0.5
         engine.setVolume(0.5)
         val volume = engine.getVolume()
-        assertTrue(volume >= 0.45 && volume <= 0.55, "Volume should be approximately 0.5, got $volume")
+        assertTrue("Volume should be approximately 0.5, got $volume", volume in 0.45..0.55)
         
         // Set volume to 0.0
         engine.setVolume(0.0)
@@ -56,27 +49,30 @@ class RustAudioEngineTest {
         assertEquals(1.0, engine.getVolume(), 0.01)
     }
     
-    @Test
     fun `test volume validation`() {
-        assertThrows<IllegalArgumentException> {
+        try {
             engine.setVolume(-0.1)
+            fail("Expected IllegalArgumentException")
+        } catch (e: IllegalArgumentException) {
+            // Expected
         }
         
-        assertThrows<IllegalArgumentException> {
+        try {
             engine.setVolume(1.1)
+            fail("Expected IllegalArgumentException")
+        } catch (e: IllegalArgumentException) {
+            // Expected
         }
     }
     
-    @Test
     fun `test volume ramping`() {
         engine.setVolumeRamped(0.8, 100)
         // Give some time for ramping
         Thread.sleep(150)
         val volume = engine.getVolume()
-        assertTrue(volume >= 0.75 && volume <= 0.85, "Volume should be approximately 0.8, got $volume")
+        assertTrue("Volume should be approximately 0.8, got $volume", volume in 0.75..0.85)
     }
     
-    @Test
     fun `test mute and unmute`() {
         // Set initial volume
         engine.setVolume(0.75)
@@ -93,7 +89,6 @@ class RustAudioEngineTest {
         assertEquals(0.75, engine.getVolume(), 0.01)
     }
     
-    @Test
     fun `test mute is idempotent`() {
         engine.setVolume(0.5)
         
@@ -112,16 +107,17 @@ class RustAudioEngineTest {
         assertEquals(0.5, engine.getVolume(), 0.01)
     }
     
-    @Test
     fun `test initial playback state`() {
         assertFalse(engine.isPlaying())
         assertEquals(0.0, engine.getPosition(), 0.01)
     }
     
-    @Test
     fun `test seek validation`() {
-        assertThrows<IllegalArgumentException> {
+        try {
             engine.seek(-1.0)
+            fail("Expected IllegalArgumentException")
+        } catch (e: IllegalArgumentException) {
+            // Expected
         }
         
         // Seeking without loaded file should not throw
@@ -130,7 +126,6 @@ class RustAudioEngineTest {
         engine.seek(10.5)
     }
     
-    @Test
     fun `test callback registration`() {
         var callbackInvoked = false
         
@@ -147,31 +142,40 @@ class RustAudioEngineTest {
         engine.clearCallback()
     }
     
-    @Test
     fun `test operations without initialization throw exception`() {
         val uninitializedEngine = AudioEngine()
         
-        assertThrows<IllegalStateException> {
+        try {
             uninitializedEngine.play()
+            fail("Expected IllegalStateException")
+        } catch (e: IllegalStateException) {
+            // Expected
         }
         
-        assertThrows<IllegalStateException> {
+        try {
             uninitializedEngine.setVolume(0.5)
+            fail("Expected IllegalStateException")
+        } catch (e: IllegalStateException) {
+            // Expected
         }
         
-        assertThrows<IllegalStateException> {
+        try {
             uninitializedEngine.getVolume()
+            fail("Expected IllegalStateException")
+        } catch (e: IllegalStateException) {
+            // Expected
         }
     }
     
-    @Test
     fun `test error handling for invalid file`() {
-        assertThrows<AudioEngineException> {
+        try {
             engine.loadFile("/nonexistent/file.mp3")
+            fail("Expected AudioEngineException")
+        } catch (e: AudioEngineException) {
+            // Expected
         }
     }
     
-    @Test
     fun `test playback controls without loaded file`() {
         // These should not crash, but may return errors from Rust
         // The engine handles this gracefully
@@ -184,13 +188,11 @@ class RustAudioEngineTest {
         }
     }
     
-    @Test
     fun `test get duration without loaded file`() {
         val duration = engine.getDuration()
         assertEquals(0.0, duration, 0.01)
     }
     
-    @Test
     fun `test FFI result codes`() {
         assertTrue(FFIResult.isSuccess(FFIResult.SUCCESS))
         assertFalse(FFIResult.isSuccess(FFIResult.NULL_POINTER))
@@ -199,7 +201,6 @@ class RustAudioEngineTest {
         assertFalse(FFIResult.isSuccess(FFIResult.INTERNAL_ERROR))
     }
     
-    @Test
     fun `test audio event type enum`() {
         assertEquals(0, AudioEventType.STATE_CHANGED.value)
         assertEquals(1, AudioEventType.POSITION_CHANGED.value)
@@ -214,7 +215,6 @@ class RustAudioEngineTest {
         assertEquals(AudioEventType.BUFFER_UNDERRUN, AudioEventType.fromValue(4))
     }
     
-    @Test
     fun `test playback state enum`() {
         assertEquals(0, PlaybackState.STOPPED.value)
         assertEquals(1, PlaybackState.PLAYING.value)

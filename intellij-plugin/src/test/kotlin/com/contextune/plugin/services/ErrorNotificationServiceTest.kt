@@ -1,20 +1,17 @@
 package com.contextune.plugin.services
 
-import org.junit.jupiter.api.Test
-import kotlin.test.assertNotNull
+import com.intellij.testFramework.fixtures.BasePlatformTestCase
 
 /**
  * Tests for ErrorNotificationService
  */
-class ErrorNotificationServiceTest {
+class ErrorNotificationServiceTest : BasePlatformTestCase() {
     
-    @Test
     fun `test service creation`() {
         val service = ErrorNotificationService()
         assertNotNull(service)
     }
     
-    @Test
     fun `test log error without exception`() {
         val service = ErrorNotificationService()
         
@@ -22,7 +19,6 @@ class ErrorNotificationServiceTest {
         service.logError("Test error message")
     }
     
-    @Test
     fun `test log error with exception`() {
         val service = ErrorNotificationService()
         val exception = RuntimeException("Test exception")
@@ -31,7 +27,6 @@ class ErrorNotificationServiceTest {
         service.logError("Test error with exception", exception)
     }
     
-    @Test
     fun `test log warning`() {
         val service = ErrorNotificationService()
         
