@@ -37,7 +37,7 @@ class PlaybackService {
             
             logger.info("PlaybackService initialized successfully")
             initialized = true
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             logger.error("Failed to initialize audio engine", e)
             throw e
         }
