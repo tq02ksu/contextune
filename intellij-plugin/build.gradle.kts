@@ -11,8 +11,8 @@ plugins {
     alias(libs.plugins.kover) // Gradle Kover Plugin
 }
 
-group = "com.contextune"
-version = "0.1.0"
+group = providers.gradleProperty("pluginGroup").get()
+version = providers.gradleProperty("pluginVersion").get()
 
 // Set the JVM language level used to build the project.
 kotlin {
@@ -113,6 +113,7 @@ intellijPlatform {
 changelog {
     groups.empty()
     repositoryUrl = providers.gradleProperty("pluginRepositoryUrl")
+    versionPrefix = ""
 }
 
 // Configure Gradle Kover Plugin - read more: https://kotlin.github.io/kotlinx-kover/gradle-plugin/#configuration-details
