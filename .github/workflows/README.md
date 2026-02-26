@@ -142,6 +142,34 @@ If you receive a performance regression alert:
 3. Profile the code to find the bottleneck
 4. Optimize or document the intentional change
 
+## Workflow Analysis and Optimization
+
+📊 **Comprehensive workflow analysis and optimization recommendations are available:**
+
+- **[Workflow Analysis (Chinese)](../../docs/workflow-analysis.md)** - 完整的工作流设计评估与优化建议
+- **[Workflow Optimization Guide](../../docs/workflow-optimization-guide.md)** - Actionable implementation guide with step-by-step instructions
+
+### Key Findings
+
+**Current State:**
+- 4 main workflows (CI, Security, Performance, Release)
+- Average CI time: ~77 minutes
+- Monthly cost estimate: ~$280
+
+**Optimization Potential:**
+- Reduce CI time by **50-60%** (to ~35 minutes)
+- Lower costs by **50-60%** (to ~$122/month)
+- Faster PR feedback (from 80 to 40 minutes)
+
+**Priority Improvements:**
+1. Eliminate workflow duplication between CI and specialized workflows
+2. Optimize job dependency chains
+3. Review and reduce excessive `continue-on-error` usage
+4. Split lint checks from cross-platform test matrix
+5. Improve caching strategy and add concurrency control
+
+See the optimization guide for detailed implementation steps.
+
 ## Continuous Improvement
 
 These workflows are designed to evolve with the project. As new features are added:
@@ -149,3 +177,4 @@ These workflows are designed to evolve with the project. As new features are add
 - Update quality gates as needed
 - Add new benchmarks for performance-critical code
 - Expand security checks as dependencies grow
+- Implement optimizations from the workflow analysis recommendations
